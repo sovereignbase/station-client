@@ -9,6 +9,11 @@ import type {
   StationClientTransactOptions,
 } from '../.types/index.js'
 
+/**
+ * Represents a base station client that coordinates local tab messaging and an opportunistic station transport.
+ *
+ * @template T The application message shape.
+ */
 export class StationClient<T extends Record<string, unknown>> {
   private readonly eventTarget = new EventTarget()
   private readonly lockName: string
@@ -33,6 +38,11 @@ export class StationClient<T extends Record<string, unknown>> {
     StationClientPendingTransactTarget
   >()
 
+  /**
+   * Initializes a new {@link StationClient} instance.
+   *
+   * @param webSocketUrl The base station WebSocket URL. When omitted, the instance operates in local-only mode.
+   */
   constructor(webSocketUrl: string = '') {
     this.webSocketUrl = webSocketUrl
     this.channelName = `origin-channel-lock::${this.webSocketUrl}`
@@ -115,6 +125,12 @@ export class StationClient<T extends Record<string, unknown>> {
     }
   }
   /**main methods*/
+
+  /**
+   * Broadcasts a message to other same-origin contexts and opportunistically forwards it to the station.
+   *
+   * @param message The message to broadcast.
+   */
   relay(message: T) {
     if (this.isClosed) return
 
@@ -122,6 +138,13 @@ export class StationClient<T extends Record<string, unknown>> {
     this.sendToStation(message)
   }
 
+  /**
+   * Sends a request to the base station and resolves with the corresponding response message.
+   *
+   * @param message The message to send.
+   * @param options Options that control cancellation and stale follower cleanup.
+   * @returns A promise that resolves with the response message, or `false` when the request cannot be issued.
+   */
   transact(
     message: T,
     options: StationClientTransactOptions = {}
@@ -192,6 +215,9 @@ export class StationClient<T extends Record<string, unknown>> {
     })
   }
 
+  /**
+   * Closes the client and releases its local and remote resources.
+   */
   close(): void {
     const wasLeader = this.isLeader
     const broadcastChannel = this.broadcastChannel
@@ -230,6 +256,13 @@ export class StationClient<T extends Record<string, unknown>> {
 
   /**listeners*/
 
+  /**
+   * Appends an event listener for events whose type attribute value is `type`.
+   *
+   * @param type The event type to listen for.
+   * @param listener The callback that receives the event.
+   * @param options An options object that specifies characteristics about the event listener.
+   */
   addEventListener<K extends keyof StationClientEventMap<T>>(
     type: K,
     listener: StationClientEventListenerFor<T, K> | null,
@@ -242,6 +275,13 @@ export class StationClient<T extends Record<string, unknown>> {
     )
   }
 
+  /**
+   * Removes an event listener previously registered with {@link addEventListener}.
+   *
+   * @param type The event type to remove.
+   * @param listener The callback to remove.
+   * @param options An options object that specifies characteristics about the event listener.
+   */
   removeEventListener<K extends keyof StationClientEventMap<T>>(
     type: K,
     listener: StationClientEventListenerFor<T, K> | null,

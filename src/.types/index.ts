@@ -1,5 +1,7 @@
 /**
  * Maps station client event names to their event payload shapes.
+ *
+ * @template T The application message shape.
  */
 export type StationClientEventMap<T extends Record<string, unknown>> = {
   message: T
@@ -7,6 +9,9 @@ export type StationClientEventMap<T extends Record<string, unknown>> = {
 
 /**
  * Represents a strongly typed station client event listener.
+ *
+ * @template T The application message shape.
+ * @template K The event type.
  */
 export type StationClientEventListener<
   T extends Record<string, unknown>,
@@ -17,6 +22,9 @@ export type StationClientEventListener<
 
 /**
  * Resolves an event name to its corresponding listener type.
+ *
+ * @template T The application message shape.
+ * @template K The event type.
  */
 export type StationClientEventListenerFor<
   T extends Record<string, unknown>,
@@ -25,6 +33,11 @@ export type StationClientEventListenerFor<
   ? StationClientEventListener<T, K>
   : EventListenerOrEventListenerObject
 
+/**
+ * Represents a message exchanged over the local broadcast channel.
+ *
+ * @template T The application message shape.
+ */
 export type StationClientLocalMessageShape<T extends Record<string, unknown>> =
   | {
       kind: 'relay'
@@ -48,22 +61,45 @@ export type StationClientLocalMessageShape<T extends Record<string, unknown>> =
       id: string
     }
 
+/**
+ * Represents a message exchanged with the station transport.
+ *
+ * @template T The application message shape.
+ */
 export type StationClientRemoteMessageShape<T extends Record<string, unknown>> =
   | T
   | readonly ['station-client-request', string, T]
 
+/**
+ * Represents the pending state of an in-flight transact operation.
+ *
+ * @template T The application message shape.
+ */
 export type StationClientPendingTransact<T extends Record<string, unknown>> = {
   resolve: (message: T | false) => void
   reject: (reason?: unknown) => void
   cleanup: () => void
 }
 
+/**
+ * Represents the leader-side routing state for a pending transact operation.
+ */
 export type StationClientPendingTransactTarget = {
   target: string
   timeoutId: ReturnType<typeof setTimeout>
 }
 
+/**
+ * Provides options for {@link StationClient.transact}.
+ */
 export type StationClientTransactOptions = {
+  /**
+   * An {@link AbortSignal} that can be used to cancel the operation.
+   */
   signal?: AbortSignal
+
+  /**
+   * The leader-side stale-entry time-to-live, in milliseconds.
+   */
   ttlMs?: number
 }
