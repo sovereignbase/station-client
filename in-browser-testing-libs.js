@@ -51,7 +51,7 @@ station.addEventListener('message', (ev) => {
 
 state.addEventListener('change', (ev) => {
   const { name, amount, flag } = ev.detail
-  if (name) nameInput.value = name
-  if (amount) amountInput.value = amount
-  if (flag) flagInput.checked = flag
+  if (name !== undefined) nameInput.value = name
+  if (amount !== undefined) amountInput.value = amount
+  if (flag !== undefined) flagInput.checked = flag
 })
