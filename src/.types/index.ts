@@ -42,7 +42,21 @@ export type StationClientLocalMessageShape<T extends Record<string, unknown>> =
       target: string
       message: T
     }
+  | {
+      kind: 'transact-abort'
+      id: string
+    }
 
 export type StationClientRemoteMessageShape<T extends Record<string, unknown>> =
   | T
   | readonly ['station-client-request', string, T]
+
+export type StationClientPendingTransact<T extends Record<string, unknown>> = {
+  resolve: (message: T) => void
+  reject: (reason?: unknown) => void
+  cleanup: () => void
+}
+
+export type StationClientTransactOptions = {
+  signal?: AbortSignal
+}

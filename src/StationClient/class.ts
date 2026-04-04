@@ -3,7 +3,9 @@ import type {
   StationClientEventMap,
   StationClientEventListenerFor,
   StationClientLocalMessageShape,
+  StationClientPendingTransact,
   StationClientRemoteMessageShape,
+  StationClientTransactOptions,
 } from '../.types/index.js'
 
 export class StationClient<T extends Record<string, unknown>> {
@@ -21,7 +23,10 @@ export class StationClient<T extends Record<string, unknown>> {
   private isClosed: boolean = false
   private isConnecting: boolean = false
   private readonly outboundQueue: StationClientRemoteMessageShape<T>[] = []
-  private readonly pendingTransacts = new Map<string, (message: T) => void>()
+  private readonly pendingTransacts = new Map<
+    string,
+    StationClientPendingTransact<T>
+  >()
   private readonly pendingTransactTargets = new Map<string, string>()
 
   constructor(webSocketUrl: string = '') {
@@ -49,11 +54,19 @@ export class StationClient<T extends Record<string, unknown>> {
       if (envelope.kind === 'transact-response') {
         if (envelope.target !== this.instanceId) return
 
-        const resolve = this.pendingTransacts.get(envelope.id)
-        if (!resolve) return
+        const pending = this.pendingTransacts.get(envelope.id)
+        if (!pending) return
 
         this.pendingTransacts.delete(envelope.id)
-        resolve(envelope.message)
+        pending.cleanup()
+        pending.resolve(envelope.message)
+        return
+      }
+
+      if (envelope.kind === 'transact-abort') {
+        if (!this.isLeader) return
+
+        this.pendingTransactTargets.delete(envelope.id)
         return
       }
 
@@ -78,11 +91,43 @@ export class StationClient<T extends Record<string, unknown>> {
     this.sendToStation(message)
   }
 
-  transact(message: T): Promise<T> {
+  transact(
+    message: T,
+    options: StationClientTransactOptions = {}
+  ): Promise<T> {
     const id = self.crypto.randomUUID()
+    const { signal } = options
 
-    return new Promise<T>((resolve) => {
-      this.pendingTransacts.set(id, resolve)
+    return new Promise<T>((resolve, reject) => {
+      const abortReason = () =>
+        signal?.reason ??
+        new DOMException('The operation was aborted.', 'AbortError')
+
+      if (signal?.aborted) {
+        reject(abortReason())
+        return
+      }
+
+      const handleAbort = () => {
+        this.pendingTransacts.delete(id)
+        this.pendingTransactTargets.delete(id)
+        signal?.removeEventListener('abort', handleAbort)
+
+        if (!this.isLeader) {
+          this.broadcastChannel?.postMessage({ kind: 'transact-abort', id })
+        }
+
+        reject(abortReason())
+      }
+
+      this.pendingTransacts.set(id, {
+        resolve,
+        reject,
+        cleanup: () => {
+          signal?.removeEventListener('abort', handleAbort)
+        },
+      })
+      signal?.addEventListener('abort', handleAbort, { once: true })
 
       if (this.isLeader) {
         this.pendingTransactTargets.set(id, this.instanceId)
@@ -100,6 +145,7 @@ export class StationClient<T extends Record<string, unknown>> {
   }
 
   close(): void {
+    const wasLeader = this.isLeader
     this.isClosed = true
     self.removeEventListener('online', this.onlineHandler)
 
@@ -113,6 +159,15 @@ export class StationClient<T extends Record<string, unknown>> {
     this.webSocket = null
     this.isLeader = false
     this.outboundQueue.length = 0
+    if (!wasLeader) {
+      for (const id of this.pendingTransacts.keys()) {
+        this.broadcastChannel?.postMessage({ kind: 'transact-abort', id })
+      }
+    }
+    for (const pending of this.pendingTransacts.values()) {
+      pending.cleanup()
+      pending.reject(new Error('Station client closed'))
+    }
     this.pendingTransacts.clear()
     this.pendingTransactTargets.clear()
   }
@@ -227,11 +282,12 @@ export class StationClient<T extends Record<string, unknown>> {
                 this.pendingTransactTargets.delete(id)
 
                 if (target === this.instanceId) {
-                  const resolve = this.pendingTransacts.get(id)
-                  if (!resolve) return
+                  const pending = this.pendingTransacts.get(id)
+                  if (!pending) return
 
                   this.pendingTransacts.delete(id)
-                  resolve(message[2] as T)
+                  pending.cleanup()
+                  pending.resolve(message[2] as T)
                   return
                 }
 
