@@ -91,10 +91,7 @@ export class StationClient<T extends Record<string, unknown>> {
     this.sendToStation(message)
   }
 
-  transact(
-    message: T,
-    options: StationClientTransactOptions = {}
-  ): Promise<T> {
+  transact(message: T, options: StationClientTransactOptions = {}): Promise<T> {
     const id = self.crypto.randomUUID()
     const { signal } = options
 
