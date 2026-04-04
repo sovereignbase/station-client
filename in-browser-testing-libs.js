@@ -42,7 +42,7 @@ state.addEventListener('snapshot', (ev) => {
 })
 
 state.addEventListener('delta', (ev) => {
-  station.postMessage(ev.detail)
+  station.relay(ev.detail)
 })
 
 station.addEventListener('message', (ev) => {

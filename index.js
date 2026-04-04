@@ -1547,10 +1547,11 @@ var StationClient = class {
       await new Promise((resolve) => setTimeout(resolve, 500));
     }
   }
-  postMessage(message) {
+  relay(message) {
     this.broadcastChannel?.postMessage(message);
   }
   backup(snapshot2) {
+    this.webSocket?.send(encode(snapshot2));
   }
 };
 
@@ -2130,7 +2131,7 @@ state.addEventListener("snapshot", (ev) => {
   localStorage.setItem("state", JSON.stringify(ev.detail));
 });
 state.addEventListener("delta", (ev) => {
-  station.postMessage(ev.detail);
+  station.relay(ev.detail);
 });
 station.addEventListener("message", (ev) => {
   state.merge(ev.detail);
