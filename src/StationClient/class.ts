@@ -5,11 +5,16 @@ import type {
   StationClientLocalMessageShape,
 } from '../.types/index.js'
 
+type StationClientStationMessage<T extends Record<string, unknown>> =
+  | T
+  | readonly ['station-client-transact', string, T]
+
 export class StationClient<T extends Record<string, unknown>> {
   private readonly eventTarget = new EventTarget()
   private readonly lockName: string
   private readonly channelName: string
   private readonly webSocketUrl: string
+  private readonly instanceId = self.crypto.randomUUID()
   private readonly onlineHandler = () => {
     void this.opportunisticConnect()
   }
@@ -18,7 +23,9 @@ export class StationClient<T extends Record<string, unknown>> {
   private isLeader: boolean = false
   private isClosed: boolean = false
   private isConnecting: boolean = false
-  private readonly outboundQueue: T[] = []
+  private readonly outboundQueue: StationClientStationMessage<T>[] = []
+  private readonly pendingTransacts = new Map<string, (message: T) => void>()
+  private readonly pendingTransactTargets = new Map<string, string>()
 
   constructor(webSocketUrl: string = '') {
     this.webSocketUrl = webSocketUrl
@@ -32,13 +39,35 @@ export class StationClient<T extends Record<string, unknown>> {
       const envelope = event.data
       if (!envelope) return
 
-      if (envelope.kind === 'relay')
+      if (envelope.kind === 'relay') {
         this.eventTarget.dispatchEvent(
           new CustomEvent('message', { detail: envelope.message })
         )
+        if (!this.isLeader) return
+
+        this.sendToStation(envelope.message)
+        return
+      }
+
+      if (envelope.kind === 'transact-response') {
+        if (envelope.target !== this.instanceId) return
+
+        const resolve = this.pendingTransacts.get(envelope.id)
+        if (!resolve) return
+
+        this.pendingTransacts.delete(envelope.id)
+        resolve(envelope.message)
+        return
+      }
+
       if (!this.isLeader) return
 
-      this.sendToStation(envelope.message)
+      this.pendingTransactTargets.set(envelope.id, envelope.source)
+      this.sendToStation([
+        'station-client-transact',
+        envelope.id,
+        envelope.message,
+      ])
     }
 
     if (this.webSocketUrl && navigator.onLine) void this.opportunisticConnect()
@@ -52,13 +81,25 @@ export class StationClient<T extends Record<string, unknown>> {
     this.sendToStation(message)
   }
 
-  transact(message: T) {
-    if (this.isLeader) {
-      this.sendToStation(message)
-      return
-    }
+  transact(message: T): Promise<T> {
+    const id = self.crypto.randomUUID()
 
-    this.broadcastChannel?.postMessage({ kind: 'transact', message })
+    return new Promise<T>((resolve) => {
+      this.pendingTransacts.set(id, resolve)
+
+      if (this.isLeader) {
+        this.pendingTransactTargets.set(id, this.instanceId)
+        this.sendToStation(['station-client-transact', id, message])
+        return
+      }
+
+      this.broadcastChannel?.postMessage({
+        kind: 'transact',
+        id,
+        source: this.instanceId,
+        message,
+      })
+    })
   }
 
   close(): void {
@@ -74,6 +115,9 @@ export class StationClient<T extends Record<string, unknown>> {
 
     this.webSocket = null
     this.isLeader = false
+    this.outboundQueue.length = 0
+    this.pendingTransacts.clear()
+    this.pendingTransactTargets.clear()
   }
 
   /**listeners*/
@@ -104,7 +148,7 @@ export class StationClient<T extends Record<string, unknown>> {
 
   /**helpers*/
 
-  private sendToStation(message: T) {
+  private sendToStation(message: StationClientStationMessage<T>) {
     if (!this.isLeader || !this.webSocketUrl) return
 
     if (!this.webSocket || this.webSocket.readyState !== WebSocket.OPEN) {
@@ -173,6 +217,35 @@ export class StationClient<T extends Record<string, unknown>> {
             socket.onmessage = (event: MessageEvent<ArrayBuffer>) => {
               const message = decode(event.data)
               if (!message) return
+
+              if (
+                Array.isArray(message) &&
+                message[0] === 'station-client-response' &&
+                typeof message[1] === 'string'
+              ) {
+                const id = message[1]
+                const target = this.pendingTransactTargets.get(id)
+                if (!target) return
+
+                this.pendingTransactTargets.delete(id)
+
+                if (target === this.instanceId) {
+                  const resolve = this.pendingTransacts.get(id)
+                  if (!resolve) return
+
+                  this.pendingTransacts.delete(id)
+                  resolve(message[2] as T)
+                  return
+                }
+
+                this.broadcastChannel?.postMessage({
+                  kind: 'transact-response',
+                  id,
+                  target,
+                  message: message[2] as T,
+                })
+                return
+              }
 
               this.eventTarget.dispatchEvent(
                 new CustomEvent('message', { detail: message })

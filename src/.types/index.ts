@@ -1,12 +1,12 @@
 /**
- * Maps OO-Struct event names to their event payload shapes.
+ * Maps station client event names to their event payload shapes.
  */
 export type StationClientEventMap<T extends Record<string, unknown>> = {
   message: T
 }
 
 /**
- * Represents a strongly typed OO-Struct event listener.
+ * Represents a strongly typed station client event listener.
  */
 export type StationClientEventListener<
   T extends Record<string, unknown>,
@@ -26,7 +26,19 @@ export type StationClientEventListenerFor<
   : EventListenerOrEventListenerObject
 
 export type StationClientLocalMessageShape<T extends Record<string, unknown>> =
-  {
-    kind: 'relay' | 'transact'
-    message: T
-  }
+  | {
+      kind: 'relay'
+      message: T
+    }
+  | {
+      kind: 'transact'
+      id: string
+      source: string
+      message: T
+    }
+  | {
+      kind: 'transact-response'
+      id: string
+      target: string
+      message: T
+    }
