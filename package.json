@@ -31,7 +31,7 @@
   "sideEffects": false,
   "scripts": {
     "format": "prettier . --write",
-    "build": "tsup",
+    "build": "tsup && node in-browser-testing-build.js",
     "test": "npm run build && node test/run-coverage.mjs && node test/e2e/run.mjs",
     "bench": "npm run build && node benchmark/bench.js",
     "prepare": "husky",
@@ -53,6 +53,7 @@
     "@commitlint/cli": "^20.5.0",
     "@commitlint/config-conventional": "^20.5.0",
     "@playwright/test": "^1.59.1",
+    "@sovereignbase/convergent-replicated-struct": "^1.0.1",
     "@types/node": "^25.5.2",
     "c8": "^11.0.0",
     "edge-runtime": "^4.0.1",
@@ -65,9 +66,7 @@
     "wrangler": "^4.80.0"
   },
   "dependencies": {
-    "@msgpack/msgpack": "^3.1.3",
-    "@sovereignbase/bytecodec": "^1.5.1",
-    "@sovereignbase/observed-overwrite-struct": "^1.0.0"
+    "@msgpack/msgpack": "^3.1.3"
   },
   "repository": {
     "type": "git",
