@@ -34,6 +34,7 @@ export type StationClientLocalMessageShape<T extends Record<string, unknown>> =
       kind: 'transact'
       id: string
       source: string
+      ttlMs?: number
       message: T
     }
   | {
@@ -57,6 +58,12 @@ export type StationClientPendingTransact<T extends Record<string, unknown>> = {
   cleanup: () => void
 }
 
+export type StationClientPendingTransactTarget = {
+  target: string
+  timeoutId: ReturnType<typeof setTimeout>
+}
+
 export type StationClientTransactOptions = {
   signal?: AbortSignal
+  ttlMs?: number
 }

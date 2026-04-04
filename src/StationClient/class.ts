@@ -4,6 +4,7 @@ import type {
   StationClientEventListenerFor,
   StationClientLocalMessageShape,
   StationClientPendingTransact,
+  StationClientPendingTransactTarget,
   StationClientRemoteMessageShape,
   StationClientTransactOptions,
 } from '../.types/index.js'
@@ -27,7 +28,10 @@ export class StationClient<T extends Record<string, unknown>> {
     string,
     StationClientPendingTransact<T>
   >()
-  private readonly pendingTransactTargets = new Map<string, string>()
+  private readonly pendingTransactTargets = new Map<
+    string,
+    StationClientPendingTransactTarget
+  >()
 
   constructor(webSocketUrl: string = '') {
     this.webSocketUrl = webSocketUrl
@@ -66,6 +70,8 @@ export class StationClient<T extends Record<string, unknown>> {
       if (envelope.kind === 'transact-abort') {
         if (!this.isLeader) return
 
+        const pendingTarget = this.pendingTransactTargets.get(envelope.id)
+        if (pendingTarget) clearTimeout(pendingTarget.timeoutId)
         this.pendingTransactTargets.delete(envelope.id)
         return
       }
@@ -87,7 +93,15 @@ export class StationClient<T extends Record<string, unknown>> {
         return
       }
 
-      this.pendingTransactTargets.set(envelope.id, envelope.source)
+      const pendingTarget = this.pendingTransactTargets.get(envelope.id)
+      if (pendingTarget) clearTimeout(pendingTarget.timeoutId)
+
+      this.pendingTransactTargets.set(envelope.id, {
+        target: envelope.source,
+        timeoutId: setTimeout(() => {
+          this.pendingTransactTargets.delete(envelope.id)
+        }, envelope.ttlMs ?? 30_000),
+      })
       this.sendToStation([
         'station-client-request',
         envelope.id,
@@ -111,7 +125,7 @@ export class StationClient<T extends Record<string, unknown>> {
     options: StationClientTransactOptions = {}
   ): Promise<T | false> {
     const id = self.crypto.randomUUID()
-    const { signal } = options
+    const { signal, ttlMs } = options
 
     return new Promise<T | false>((resolve, reject) => {
       const abortReason = () =>
@@ -138,6 +152,8 @@ export class StationClient<T extends Record<string, unknown>> {
 
       const handleAbort = () => {
         this.pendingTransacts.delete(id)
+        const pendingTarget = this.pendingTransactTargets.get(id)
+        if (pendingTarget) clearTimeout(pendingTarget.timeoutId)
         this.pendingTransactTargets.delete(id)
         signal?.removeEventListener('abort', handleAbort)
 
@@ -158,7 +174,6 @@ export class StationClient<T extends Record<string, unknown>> {
       signal?.addEventListener('abort', handleAbort, { once: true })
 
       if (this.isLeader) {
-        this.pendingTransactTargets.set(id, this.instanceId)
         this.sendToStation(['station-client-request', id, message])
         return
       }
@@ -167,6 +182,7 @@ export class StationClient<T extends Record<string, unknown>> {
         kind: 'transact',
         id,
         source: this.instanceId,
+        ttlMs,
         message,
       })
     })
@@ -197,6 +213,9 @@ export class StationClient<T extends Record<string, unknown>> {
       pending.reject(new Error('Station client closed'))
     }
     this.pendingTransacts.clear()
+    for (const pendingTarget of this.pendingTransactTargets.values()) {
+      clearTimeout(pendingTarget.timeoutId)
+    }
     this.pendingTransactTargets.clear()
   }
 
@@ -304,27 +323,26 @@ export class StationClient<T extends Record<string, unknown>> {
                 typeof message[1] === 'string'
               ) {
                 const id = message[1]
-                const target = this.pendingTransactTargets.get(id)
-                if (!target) return
+                const pendingTarget = this.pendingTransactTargets.get(id)
+                if (pendingTarget) {
+                  clearTimeout(pendingTarget.timeoutId)
+                  this.pendingTransactTargets.delete(id)
 
-                this.pendingTransactTargets.delete(id)
-
-                if (target === this.instanceId) {
-                  const pending = this.pendingTransacts.get(id)
-                  if (!pending) return
-
-                  this.pendingTransacts.delete(id)
-                  pending.cleanup()
-                  pending.resolve(message[2] as T)
+                  this.broadcastChannel?.postMessage({
+                    kind: 'transact-response',
+                    id,
+                    target: pendingTarget.target,
+                    message: message[2] as T,
+                  })
                   return
                 }
 
-                this.broadcastChannel?.postMessage({
-                  kind: 'transact-response',
-                  id,
-                  target,
-                  message: message[2] as T,
-                })
+                const pending = this.pendingTransacts.get(id)
+                if (!pending) return
+
+                this.pendingTransacts.delete(id)
+                pending.cleanup()
+                pending.resolve(message[2] as T)
                 return
               }
 
