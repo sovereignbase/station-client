@@ -144,6 +144,8 @@ export class StationClient<T extends Record<string, unknown>> {
 
     try {
       while (!this.isClosed) {
+        if (self.navigator.onLine !== true) return
+
         await self.navigator.locks.request(
           this.lockName,
           { ifAvailable: true },
@@ -196,7 +198,7 @@ export class StationClient<T extends Record<string, unknown>> {
           }
         )
 
-        if (this.isClosed) return
+        if (this.isClosed || self.navigator.onLine !== true) return
         await new Promise<void>((resolve) => setTimeout(resolve, 10_000))
       }
     } finally {
