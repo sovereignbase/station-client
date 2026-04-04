@@ -1,77 +1,115 @@
 import assert from 'node:assert/strict'
-import test from 'node:test' /** update to current package */
+import test from 'node:test'
+import { createServer } from 'node:http'
+import { decode, encode } from '@msgpack/msgpack'
+import { WebSocketServer } from 'ws'
+import { StationClient } from '../../dist/index.js'
 import {
-  concat,
-  fromBase64String,
-  fromBase64UrlString,
-  fromBigInt,
-  fromHex,
-  fromJSON,
-  fromString,
-  fromZ85String,
-  toBase64String,
-  toBase64UrlString,
-  toBigInt,
-  toHex,
-  toJSON,
-  toString,
-  toZ85String,
-} from '../../dist/index.js'
+  installBrowserLikeRuntime,
+  waitFor,
+} from '../shared/station-client-fixtures.mjs'
 
-test('integration: utf8 -> base64 -> utf8', () => {
-  const text = 'pipeline check'
-  const bytes = fromString(text)
-  const encoded = toBase64String(bytes)
-  const decoded = fromBase64String(encoded)
-  assert.equal(toString(decoded), text)
-})
+const NativeWebSocket = globalThis.WebSocket
 
-test('integration: utf8 -> base64url -> utf8', () => {
-  const text = 'pipeline check'
-  const bytes = fromString(text)
-  const encoded = toBase64UrlString(bytes)
-  const decoded = fromBase64UrlString(encoded)
-  assert.equal(toString(decoded), text)
-})
+test('integration: two clients share one base station connection and transact through the leader', async () => {
+  const runtime = installBrowserLikeRuntime({ WebSocketImpl: NativeWebSocket })
+  const server = createServer()
+  const wss = new WebSocketServer({ server })
+  const state = {
+    currentConnections: 0,
+    messages: [],
+    requests: [],
+  }
+  const sockets = new Set()
 
-test('integration: utf8 -> hex -> utf8', () => {
-  const text = 'pipeline check'
-  const bytes = fromString(text)
-  const encoded = toHex(bytes)
-  const decoded = fromHex(encoded)
-  assert.equal(toString(decoded), text)
-})
+  await new Promise((resolve) => {
+    server.listen(0, '127.0.0.1', resolve)
+  })
 
-test('integration: bigint -> bytes -> hex -> bigint', () => {
-  const value = 0x1234567890abcdefn
-  const bytes = fromBigInt(value)
-  const encoded = toHex(bytes)
-  const decoded = fromHex(encoded)
-  assert.equal(toBigInt(decoded), value)
-})
+  const address = server.address()
+  if (!address || typeof address === 'string') {
+    throw new Error('Failed to resolve integration test server port.')
+  }
 
-test('integration: json -> bytes -> base64url -> json', () => {
-  const value = { ok: true, list: [1, 2, 3] }
-  const bytes = fromJSON(value)
-  const encoded = toBase64UrlString(bytes)
-  const decoded = fromBase64UrlString(encoded)
-  assert.deepStrictEqual(toJSON(decoded), value)
-})
+  const webSocketUrl = `ws://127.0.0.1:${address.port}/base-station`
 
-test('integration: z85 -> hex -> bytes', () => {
-  const payload = Uint8Array.from([
-    0x86, 0x4f, 0xd2, 0x6f, 0xb5, 0x59, 0xf7, 0x5b,
-  ])
-  const z85 = toZ85String(payload)
-  const hex = toHex(fromZ85String(z85))
-  assert.equal(hex, '864fd26fb559f75b')
-})
+  wss.on('connection', (socket) => {
+    state.currentConnections += 1
+    sockets.add(socket)
 
-test('integration: concat + base64url', () => {
-  const left = fromString('left')
-  const right = fromString('right')
-  const merged = concat([left, right])
-  const encoded = toBase64UrlString(merged)
-  const decoded = fromBase64UrlString(encoded)
-  assert.equal(toString(decoded), 'leftright')
+    socket.on('message', (data) => {
+      const message = decode(new Uint8Array(data))
+
+      if (
+        Array.isArray(message) &&
+        message[0] === 'station-client-request' &&
+        typeof message[1] === 'string'
+      ) {
+        state.requests.push(message)
+        socket.send(
+          encode([
+            'station-client-response',
+            message[1],
+            { ok: true, echo: message[2] },
+          ])
+        )
+        return
+      }
+
+      state.messages.push(message)
+    })
+
+    socket.on('close', () => {
+      sockets.delete(socket)
+      state.currentConnections -= 1
+    })
+  })
+
+  const leader = new StationClient(webSocketUrl)
+  const follower = new StationClient(webSocketUrl)
+  const followerMessages = []
+
+  try {
+    follower.addEventListener('message', (event) => {
+      followerMessages.push(event.detail)
+    })
+
+    await waitFor(() => state.currentConnections === 1, { timeoutMs: 5_000 })
+    await waitFor(() => leader.webSocket?.readyState === NativeWebSocket.OPEN, {
+      timeoutMs: 5_000,
+    })
+
+    const response = await follower.transact({ type: 'integration' })
+    assert.deepEqual(response, {
+      ok: true,
+      echo: { type: 'integration' },
+    })
+
+    leader.relay({ type: 'relay', from: 'leader' })
+    await waitFor(() => state.messages.length === 1)
+    assert.deepEqual(state.messages[0], { type: 'relay', from: 'leader' })
+
+    for (const socket of sockets) {
+      socket.send(encode({ type: 'server', from: 'base-station' }))
+    }
+
+    await waitFor(() =>
+      followerMessages.some((message) => message.type === 'server')
+    )
+
+    assert.equal(state.requests.length, 1)
+    assert.equal(state.requests[0][0], 'station-client-request')
+    assert.deepEqual(state.requests[0][2], { type: 'integration' })
+  } finally {
+    leader.close()
+    follower.close()
+
+    await new Promise((resolve) => {
+      wss.close(() => {
+        server.close(() => resolve())
+      })
+    })
+
+    runtime.restore()
+  }
 })

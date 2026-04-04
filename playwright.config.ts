@@ -16,6 +16,7 @@ const webServer = process.env.PLAYWRIGHT_BASE_URL
 export default defineConfig({
   testDir: 'test/e2e/runsInBrowsers',
   timeout: 30000,
+  workers: 1,
   use: {
     baseURL,
   },

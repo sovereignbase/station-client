@@ -847,18 +847,18 @@ var StackPool = class {
     return this.stack[this.stackHeadPosition]
   }
   pushArrayState(size) {
-    const state2 = this.getUninitializedStateFromPool()
-    state2.type = STATE_ARRAY
-    state2.position = 0
-    state2.size = size
-    state2.array = new Array(size)
+    const state = this.getUninitializedStateFromPool()
+    state.type = STATE_ARRAY
+    state.position = 0
+    state.size = size
+    state.array = new Array(size)
   }
   pushMapState(size) {
-    const state2 = this.getUninitializedStateFromPool()
-    state2.type = STATE_MAP_KEY
-    state2.readCount = 0
-    state2.size = size
-    state2.map = {}
+    const state = this.getUninitializedStateFromPool()
+    state.type = STATE_MAP_KEY
+    state.readCount = 0
+    state.size = size
+    state.map = {}
   }
   getUninitializedStateFromPool() {
     this.stackHeadPosition++
@@ -876,22 +876,22 @@ var StackPool = class {
     }
     return this.stack[this.stackHeadPosition]
   }
-  release(state2) {
+  release(state) {
     const topStackState = this.stack[this.stackHeadPosition]
-    if (topStackState !== state2) {
+    if (topStackState !== state) {
       throw new Error(
         'Invalid stack state. Released state is not on top of the stack.'
       )
     }
-    if (state2.type === STATE_ARRAY) {
-      const partialState = state2
+    if (state.type === STATE_ARRAY) {
+      const partialState = state
       partialState.size = 0
       partialState.array = void 0
       partialState.position = 0
       partialState.type = void 0
     }
-    if (state2.type === STATE_MAP_KEY || state2.type === STATE_MAP_VALUE) {
-      const partialState = state2
+    if (state.type === STATE_MAP_KEY || state.type === STATE_MAP_VALUE) {
+      const partialState = state
       partialState.size = 0
       partialState.map = void 0
       partialState.readCount = 0
@@ -1265,32 +1265,32 @@ var Decoder = class _Decoder {
       this.complete()
       const stack = this.stack
       while (stack.length > 0) {
-        const state2 = stack.top()
-        if (state2.type === STATE_ARRAY) {
-          state2.array[state2.position] = object
-          state2.position++
-          if (state2.position === state2.size) {
-            object = state2.array
-            stack.release(state2)
+        const state = stack.top()
+        if (state.type === STATE_ARRAY) {
+          state.array[state.position] = object
+          state.position++
+          if (state.position === state.size) {
+            object = state.array
+            stack.release(state)
           } else {
             continue DECODE
           }
-        } else if (state2.type === STATE_MAP_KEY) {
+        } else if (state.type === STATE_MAP_KEY) {
           if (object === '__proto__') {
             throw new DecodeError('The key __proto__ is not allowed')
           }
-          state2.key = this.mapKeyConverter(object)
-          state2.type = STATE_MAP_VALUE
+          state.key = this.mapKeyConverter(object)
+          state.type = STATE_MAP_VALUE
           continue DECODE
         } else {
-          state2.map[state2.key] = object
-          state2.readCount++
-          if (state2.readCount === state2.size) {
-            object = state2.map
-            stack.release(state2)
+          state.map[state.key] = object
+          state.readCount++
+          if (state.readCount === state.size) {
+            object = state.map
+            stack.release(state)
           } else {
-            state2.key = null
-            state2.type = STATE_MAP_KEY
+            state.key = null
+            state.type = STATE_MAP_KEY
             continue DECODE
           }
         }
@@ -1371,8 +1371,8 @@ var Decoder = class _Decoder {
   }
   stateIsMapKey() {
     if (this.stack.length > 0) {
-      const state2 = this.stack.top()
-      return state2.type === STATE_MAP_KEY
+      const state = this.stack.top()
+      return state.type === STATE_MAP_KEY
     }
     return false
   }
@@ -1484,7 +1484,7 @@ function decode(buffer, options) {
   return decoder.decode(buffer)
 }
 
-// dist/index.js
+// src/StationClient/class.ts
 var StationClient = class {
   eventTarget = new EventTarget()
   lockName
@@ -1810,617 +1810,4 @@ var StationClient = class {
     }
   }
 }
-
-// node_modules/uuid/dist/regex.js
-var regex_default =
-  /^(?:[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/i
-
-// node_modules/uuid/dist/validate.js
-function validate(uuid) {
-  return typeof uuid === 'string' && regex_default.test(uuid)
-}
-var validate_default = validate
-
-// node_modules/uuid/dist/stringify.js
-var byteToHex = []
-for (let i = 0; i < 256; ++i) {
-  byteToHex.push((i + 256).toString(16).slice(1))
-}
-function unsafeStringify(arr, offset = 0) {
-  return (
-    byteToHex[arr[offset + 0]] +
-    byteToHex[arr[offset + 1]] +
-    byteToHex[arr[offset + 2]] +
-    byteToHex[arr[offset + 3]] +
-    '-' +
-    byteToHex[arr[offset + 4]] +
-    byteToHex[arr[offset + 5]] +
-    '-' +
-    byteToHex[arr[offset + 6]] +
-    byteToHex[arr[offset + 7]] +
-    '-' +
-    byteToHex[arr[offset + 8]] +
-    byteToHex[arr[offset + 9]] +
-    '-' +
-    byteToHex[arr[offset + 10]] +
-    byteToHex[arr[offset + 11]] +
-    byteToHex[arr[offset + 12]] +
-    byteToHex[arr[offset + 13]] +
-    byteToHex[arr[offset + 14]] +
-    byteToHex[arr[offset + 15]]
-  ).toLowerCase()
-}
-
-// node_modules/uuid/dist/rng.js
-var getRandomValues
-var rnds8 = new Uint8Array(16)
-function rng() {
-  if (!getRandomValues) {
-    if (typeof crypto === 'undefined' || !crypto.getRandomValues) {
-      throw new Error(
-        'crypto.getRandomValues() not supported. See https://github.com/uuidjs/uuid#getrandomvalues-not-supported'
-      )
-    }
-    getRandomValues = crypto.getRandomValues.bind(crypto)
-  }
-  return getRandomValues(rnds8)
-}
-
-// node_modules/uuid/dist/v7.js
-var _state = {}
-function v7(options, buf, offset) {
-  let bytes
-  if (options) {
-    bytes = v7Bytes(
-      options.random ?? options.rng?.() ?? rng(),
-      options.msecs,
-      options.seq,
-      buf,
-      offset
-    )
-  } else {
-    const now = Date.now()
-    const rnds = rng()
-    updateV7State(_state, now, rnds)
-    bytes = v7Bytes(rnds, _state.msecs, _state.seq, buf, offset)
-  }
-  return buf ?? unsafeStringify(bytes)
-}
-function updateV7State(state2, now, rnds) {
-  state2.msecs ??= -Infinity
-  state2.seq ??= 0
-  if (now > state2.msecs) {
-    state2.seq = (rnds[6] << 23) | (rnds[7] << 16) | (rnds[8] << 8) | rnds[9]
-    state2.msecs = now
-  } else {
-    state2.seq = (state2.seq + 1) | 0
-    if (state2.seq === 0) {
-      state2.msecs++
-    }
-  }
-  return state2
-}
-function v7Bytes(rnds, msecs, seq, buf, offset = 0) {
-  if (rnds.length < 16) {
-    throw new Error('Random bytes length must be >= 16')
-  }
-  if (!buf) {
-    buf = new Uint8Array(16)
-    offset = 0
-  } else {
-    if (offset < 0 || offset + 16 > buf.length) {
-      throw new RangeError(
-        `UUID byte range ${offset}:${offset + 15} is out of buffer bounds`
-      )
-    }
-  }
-  msecs ??= Date.now()
-  seq ??= ((rnds[6] * 127) << 24) | (rnds[7] << 16) | (rnds[8] << 8) | rnds[9]
-  buf[offset++] = (msecs / 1099511627776) & 255
-  buf[offset++] = (msecs / 4294967296) & 255
-  buf[offset++] = (msecs / 16777216) & 255
-  buf[offset++] = (msecs / 65536) & 255
-  buf[offset++] = (msecs / 256) & 255
-  buf[offset++] = msecs & 255
-  buf[offset++] = 112 | ((seq >>> 28) & 15)
-  buf[offset++] = (seq >>> 20) & 255
-  buf[offset++] = 128 | ((seq >>> 14) & 63)
-  buf[offset++] = (seq >>> 6) & 255
-  buf[offset++] = ((seq << 2) & 255) | (rnds[10] & 3)
-  buf[offset++] = rnds[11]
-  buf[offset++] = rnds[12]
-  buf[offset++] = rnds[13]
-  buf[offset++] = rnds[14]
-  buf[offset++] = rnds[15]
-  return buf
-}
-var v7_default = v7
-
-// node_modules/uuid/dist/version.js
-function version(uuid) {
-  if (!validate_default(uuid)) {
-    throw TypeError('Invalid UUID')
-  }
-  return parseInt(uuid.slice(14, 15), 16)
-}
-var version_default = version
-
-// node_modules/@sovereignbase/utils/dist/index.js
-var PROTOTYPE_LIST = [
-  'null',
-  'undefined',
-  'boolean',
-  'string',
-  'symbol',
-  'number',
-  'bigint',
-  'record',
-  'array',
-  'map',
-  'set',
-  'date',
-  'regexp',
-  'error',
-  'arraybuffer',
-  'sharedarraybuffer',
-  'dataview',
-  'int8array',
-  'uint8array',
-  'uint8clampedarray',
-  'int16array',
-  'uint16array',
-  'int32array',
-  'uint32array',
-  'float32array',
-  'float64array',
-  'bigint64array',
-  'biguint64array',
-  'url',
-  'urlsearchparams',
-  'blob',
-  'file',
-  'unknown',
-]
-function prototype(value) {
-  let type = typeof value
-  if (type === 'object') {
-    type = Object.prototype.toString.call(value).slice(8, -1).toLowerCase()
-  }
-  if (type === 'object') type = 'record'
-  if (!PROTOTYPE_LIST.includes(type)) {
-    type = 'unknown'
-  }
-  return type
-}
-function isUuidV7(value) {
-  if (typeof value !== 'string') return false
-  try {
-    return version_default(value) === 7
-  } catch {
-    return false
-  }
-}
-function safeStructuredClone(value) {
-  try {
-    return [true, structuredClone(value)]
-  } catch {
-    return [false]
-  }
-}
-
-// node_modules/@sovereignbase/convergent-replicated-struct/dist/index.js
-var OOStructError = class extends Error {
-  /**
-   * The semantic error code for the failure.
-   */
-  code
-  /**
-   * Creates a typed OO-Struct error.
-   *
-   * @param code - The semantic error code.
-   * @param message - An optional human-readable detail message.
-   */
-  constructor(code, message) {
-    const detail = message ?? code
-    super(`{@sovereignbase/observed-overwrite-struct} ${detail}`)
-    this.code = code
-    this.name = 'OOStructError'
-  }
-}
-function parseSnapshotEntryToStateEntry(defaultValue, snapshotEntry) {
-  if (
-    prototype(snapshotEntry) !== 'record' ||
-    !Object.hasOwn(snapshotEntry, '__value') ||
-    !isUuidV7(snapshotEntry.__uuidv7) ||
-    !isUuidV7(snapshotEntry.__after) ||
-    !Array.isArray(snapshotEntry.__overwrites)
-  )
-    return false
-  const [cloned, copiedValue] = safeStructuredClone(snapshotEntry.__value)
-  if (!cloned || prototype(copiedValue) !== prototype(defaultValue))
-    return false
-  const overwrites = /* @__PURE__ */ new Set([])
-  for (const overwrite of snapshotEntry.__overwrites) {
-    if (!isUuidV7(overwrite) || overwrite === snapshotEntry.__uuidv7) continue
-    overwrites.add(overwrite)
-  }
-  if (!overwrites.has(snapshotEntry.__after)) return false
-  return {
-    __uuidv7: snapshotEntry.__uuidv7,
-    __value: copiedValue,
-    __after: snapshotEntry.__after,
-    __overwrites: overwrites,
-  }
-}
-function parseStateEntryToSnapshotEntry(stateEntry) {
-  return {
-    __uuidv7: stateEntry.__uuidv7,
-    __value: structuredClone(stateEntry.__value),
-    __after: stateEntry.__after,
-    __overwrites: Array.from(stateEntry.__overwrites),
-  }
-}
-var OOStruct = class _OOStruct {
-  __eventTarget = new EventTarget()
-  __defaults
-  __state
-  __live
-  /**
-   * Creates a replica from default values and an optional snapshot.
-   *
-   * @param defaults - The default field values that define the struct shape.
-   * @param snapshot - An optional serialized snapshot used for hydration.
-   * @throws {OOStructError} Thrown when the default values are not supported by `structuredClone`.
-   */
-  constructor(defaults, snapshot2) {
-    const [cloned, copiedDefaults] = safeStructuredClone(defaults)
-    if (!cloned)
-      throw new OOStructError(
-        'DEFAULTS_NOT_CLONEABLE',
-        'Default values must be supported by structuredClone.'
-      )
-    this.__defaults = copiedDefaults
-    this.__state = {}
-    this.__live = {}
-    const snapshotIsObject = snapshot2 && prototype(snapshot2) === 'record'
-    for (const key of Object.keys(this.__defaults)) {
-      const defaultValue = this.__defaults[key]
-      if (snapshotIsObject && Object.hasOwn(snapshot2, key)) {
-        const valid = parseSnapshotEntryToStateEntry(
-          defaultValue,
-          snapshot2[key]
-        )
-        if (valid) {
-          this.__live[key] = valid.__value
-          this.__state[key] = valid
-          continue
-        }
-      }
-      this.__live[key] = defaultValue
-      const root = v7_default()
-      this.__state[key] = {
-        __uuidv7: v7_default(),
-        __after: root,
-        __value: defaultValue,
-        __overwrites: /* @__PURE__ */ new Set([root]),
-      }
-    }
-  }
-  /**CRUD*/
-  /**
-   * Creates a new replica.
-   *
-   * @param defaults - The default field values that define the struct shape.
-   * @param snapshot - An optional serialized snapshot used for hydration.
-   * @returns A new OO-Struct replica.
-   */
-  static create(defaults, snapshot2) {
-    return new _OOStruct(defaults, snapshot2)
-  }
-  /**
-   * Reads the current value of a field.
-   *
-   * @param key - The field key to read.
-   * @returns A cloned copy of the field's current value.
-   */
-  read(key) {
-    return structuredClone(this.__live[key])
-  }
-  /**
-   * Overwrites a field with a new value.
-   *
-   * @param key - The field key to overwrite.
-   * @param value - The next value for the field.
-   * @throws {OOStructError} Thrown when the value is not supported by `structuredClone`.
-   * @throws {OOStructError} Thrown when the value runtime type does not match the default value runtime type.
-   */
-  update(key, value) {
-    const [cloned, copiedValue] = safeStructuredClone(value)
-    if (!cloned)
-      throw new OOStructError(
-        'VALUE_NOT_CLONEABLE',
-        'Updated values must be supported by structuredClone.'
-      )
-    if (prototype(copiedValue) !== prototype(this.__defaults[key]))
-      throw new OOStructError(
-        'VALUE_TYPE_MISMATCH',
-        'Updated value must match the default value runtime type.'
-      )
-    const delta = {}
-    const change = {}
-    delta[key] = this.overwriteAndReturnSnapshotEntry(key, copiedValue)
-    change[key] = structuredClone(copiedValue)
-    this.__eventTarget.dispatchEvent(
-      new CustomEvent('delta', { detail: delta })
-    )
-    this.__eventTarget.dispatchEvent(
-      new CustomEvent('change', { detail: change })
-    )
-  }
-  /**
-   * Resets one field or the entire struct back to default values.
-   *
-   * @param key - The optional field key to reset. When omitted, every field is reset.
-   */
-  delete(key) {
-    const delta = {}
-    const change = {}
-    if (key !== void 0) {
-      if (!Object.hasOwn(this.__defaults, key)) return
-      const value = this.__defaults[key]
-      delta[key] = this.overwriteAndReturnSnapshotEntry(key, value)
-      change[key] = structuredClone(value)
-    } else {
-      for (const [key2, value] of Object.entries(this.__defaults)) {
-        delta[key2] = this.overwriteAndReturnSnapshotEntry(key2, value)
-        change[key2] = structuredClone(value)
-      }
-    }
-    this.__eventTarget.dispatchEvent(
-      new CustomEvent('delta', { detail: delta })
-    )
-    this.__eventTarget.dispatchEvent(
-      new CustomEvent('change', { detail: change })
-    )
-  }
-  /**MAGS*/
-  /**
-   * Merges an incoming delta into the current replica.
-   *
-   * @param replica - The incoming partial snapshot projection to merge.
-   */
-  merge(replica) {
-    if (!replica || typeof replica !== 'object' || Array.isArray(replica))
-      return
-    const delta = {}
-    const change = {}
-    let hasDelta = false
-    let hasChange = false
-    for (const [key, value] of Object.entries(replica)) {
-      if (!Object.hasOwn(this.__state, key)) continue
-      const candidate = parseSnapshotEntryToStateEntry(
-        this.__defaults[key],
-        value
-      )
-      if (!candidate) continue
-      const target = this.__state[key]
-      const current = { ...target }
-      let frontier = ''
-      for (const overwrite of target.__overwrites) {
-        if (frontier < overwrite) frontier = overwrite
-      }
-      for (const overwrite of candidate.__overwrites) {
-        if (overwrite <= frontier || target.__overwrites.has(overwrite))
-          continue
-        target.__overwrites.add(overwrite)
-      }
-      if (target.__overwrites.has(candidate.__uuidv7)) continue
-      if (current.__uuidv7 === candidate.__uuidv7) {
-        if (current.__after < candidate.__after) {
-          target.__value = candidate.__value
-          target.__after = candidate.__after
-          target.__overwrites.add(candidate.__after)
-          this.__live[key] = candidate.__value
-          change[key] = structuredClone(candidate.__value)
-          hasChange = true
-        } else {
-          delta[key] = this.overwriteAndReturnSnapshotEntry(
-            key,
-            current.__value
-          )
-          hasDelta = true
-        }
-        continue
-      }
-      if (
-        current.__uuidv7 === candidate.__after ||
-        target.__overwrites.has(current.__uuidv7) ||
-        candidate.__uuidv7 > current.__uuidv7
-      ) {
-        target.__uuidv7 = candidate.__uuidv7
-        target.__value = candidate.__value
-        target.__after = candidate.__after
-        target.__overwrites.add(candidate.__after)
-        target.__overwrites.add(current.__uuidv7)
-        this.__live[key] = candidate.__value
-        change[key] = structuredClone(candidate.__value)
-        hasChange = true
-        continue
-      }
-      target.__overwrites.add(candidate.__uuidv7)
-      delta[key] = parseStateEntryToSnapshotEntry(target)
-      hasDelta = true
-    }
-    if (hasDelta)
-      this.__eventTarget.dispatchEvent(
-        new CustomEvent('delta', { detail: delta })
-      )
-    if (hasChange)
-      this.__eventTarget.dispatchEvent(
-        new CustomEvent('change', { detail: change })
-      )
-  }
-  /**
-   * Emits the current acknowledgement frontier for each field.
-   */
-  acknowledge() {
-    const ack = {}
-    for (const [key, value] of Object.entries(this.__state)) {
-      let max = ''
-      for (const overwrite of value.__overwrites) {
-        if (max < overwrite) max = overwrite
-      }
-      ack[key] = max
-    }
-    this.__eventTarget.dispatchEvent(new CustomEvent('ack', { detail: ack }))
-  }
-  /**
-   * Removes overwritten identifiers that every provided frontier has acknowledged.
-   *
-   * @param frontiers - A collection of acknowledgement frontiers to compact against.
-   */
-  garbageCollect(frontiers) {
-    if (!Array.isArray(frontiers) || frontiers.length < 1) return
-    const smallestAcknowledgementsPerKey = {}
-    for (const frontier of frontiers) {
-      for (const [key, value] of Object.entries(frontier)) {
-        if (!Object.hasOwn(this.__state, key) || !isUuidV7(value)) continue
-        const current = smallestAcknowledgementsPerKey[key]
-        if (typeof current === 'string' && current <= value) continue
-        smallestAcknowledgementsPerKey[key] = value
-      }
-    }
-    for (const [key, value] of Object.entries(smallestAcknowledgementsPerKey)) {
-      const target = this.__state[key]
-      const smallest = value
-      for (const uuidv72 of target.__overwrites) {
-        if (uuidv72 === target.__after || uuidv72 > smallest) continue
-        target.__overwrites.delete(uuidv72)
-      }
-    }
-  }
-  /**
-   * Emits a serialized snapshot of the current replica state.
-   */
-  snapshot() {
-    const snapshot2 = {}
-    for (const [key, value] of Object.entries(this.__state)) {
-      snapshot2[key] = parseStateEntryToSnapshotEntry(value)
-    }
-    this.__eventTarget.dispatchEvent(
-      new CustomEvent('snapshot', { detail: snapshot2 })
-    )
-  }
-  /**ADDITIONAL*/
-  /**
-   * Returns the struct field keys.
-   *
-   * @returns The field keys in the current replica.
-   */
-  keys() {
-    return Object.keys(this.__live)
-  }
-  /**
-   * Returns cloned copies of the current field values.
-   *
-   * @returns The current field values.
-   */
-  values() {
-    return Object.values(this.__live).map((value) => structuredClone(value))
-  }
-  /**
-   * Returns cloned key-value pairs for the current replica state.
-   *
-   * @returns The current field entries.
-   */
-  entries() {
-    return Object.entries(this.__live).map(([key, value]) => [
-      key,
-      structuredClone(value),
-    ])
-  }
-  /**EVENTS*/
-  /**
-   * Registers an event listener.
-   *
-   * @param type - The event type to listen for.
-   * @param listener - The listener to register.
-   * @param options - Listener registration options.
-   */
-  addEventListener(type, listener, options) {
-    this.__eventTarget.addEventListener(type, listener, options)
-  }
-  /**
-   * Removes an event listener.
-   *
-   * @param type - The event type to stop listening for.
-   * @param listener - The listener to remove.
-   * @param options - Listener removal options.
-   */
-  removeEventListener(type, listener, options) {
-    this.__eventTarget.removeEventListener(type, listener, options)
-  }
-  /**HELPERS*/
-  /**
-   * Overwrites a field and returns the serialized delta entry for that overwrite.
-   *
-   * @param key - The field key to overwrite.
-   * @param value - The next value for the field.
-   * @returns The serialized snapshot entry for the new winning value.
-   */
-  overwriteAndReturnSnapshotEntry(key, value) {
-    const target = this.__state[key]
-    const old = { ...target }
-    target.__uuidv7 = v7_default()
-    target.__value = value
-    target.__after = old.__uuidv7
-    target.__overwrites.add(old.__uuidv7)
-    this.__live[key] = value
-    return parseStateEntryToSnapshotEntry(target)
-  }
-}
-
-// in-browser-testing-libs.js
-var station = new StationClient()
-var snapshot = JSON.parse(localStorage.getItem('state')) ?? void 0
-var state = new OOStruct(
-  {
-    name: '',
-    amount: 0,
-    flag: false,
-  },
-  snapshot
-)
-var nameInput = document.getElementById('name')
-var amountInput = document.getElementById('amount')
-var flagInput = document.getElementById('flag')
-nameInput.value = state.read('name')
-amountInput.value = state.read('amount')
-flagInput.checked = state.read('flag')
-nameInput.addEventListener('change', async (ev) => {
-  state.update('name', ev.target.value)
-  state.snapshot()
-})
-amountInput.addEventListener('change', async (ev) => {
-  state.update('amount', ev.target.valueAsNumber)
-  state.snapshot()
-})
-flagInput.addEventListener('change', async (ev) => {
-  state.update('flag', ev.target.checked)
-  state.snapshot()
-})
-state.addEventListener('snapshot', (ev) => {
-  localStorage.setItem('state', JSON.stringify(ev.detail))
-})
-state.addEventListener('delta', (ev) => {
-  station.relay(ev.detail)
-})
-station.addEventListener('message', (ev) => {
-  state.merge(ev.detail)
-})
-state.addEventListener('change', (ev) => {
-  const { name, amount, flag } = ev.detail
-  if (name !== void 0) nameInput.value = name
-  if (amount !== void 0) amountInput.value = amount
-  if (flag !== void 0) flagInput.checked = flag
-})
+export { StationClient }

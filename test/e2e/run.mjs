@@ -3,17 +3,6 @@ import { spawnSync } from 'node:child_process'
 /** update to current package */
 const root = process.cwd()
 const tasks = [
-  ['Node', resolve(root, 'test', 'e2e', 'runsInNode', 'run.mjs')],
-  ['Bun', resolve(root, 'test', 'e2e', 'runsInBun', 'run.mjs')],
-  ['Deno', resolve(root, 'test', 'e2e', 'runsInDeno', 'run.mjs')],
-  [
-    'Cloudflare Workers',
-    resolve(root, 'test', 'e2e', 'runsInCloudflareWorkers', 'run.mjs'),
-  ],
-  [
-    'Edge Runtimes',
-    resolve(root, 'test', 'e2e', 'runsInEdgeRuntimes', 'run.mjs'),
-  ],
   ['Browsers', resolve(root, 'test', 'e2e', 'runsInBrowsers', 'run.mjs')],
 ]
 
