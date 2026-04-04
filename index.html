@@ -3,27 +3,190 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>station-client browser demo</title>
-    <link
-      rel="shortcut icon"
-      href="https://sovereignbase.dev/sovereignbase_logo.png"
-      type="image/x-icon"
+    <title>Sovereignbase station client</title>
+    <meta
+      name="description"
+      content="Browser demo for @sovereignbase/station-client, a realtime client that synchronizes state between browser tabs."
     />
+    <meta
+      name="keywords"
+      content="station-client, sovereignbase, realtime client, browser sync, BroadcastChannel, WebSocket, local-first, TypeScript, JavaScript"
+    />
+    <meta name="author" content="Jori Lehtinen" />
+    <meta
+      name="robots"
+      content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    />
+    <meta name="application-name" content="station-client" />
+    <link rel="canonical" href="https://sovereignbase.dev/station-client/" />
+    <link
+      rel="icon"
+      type="image/png"
+      href="https://sovereignbase.dev/sovereignbase_logo.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      href="https://sovereignbase.dev/sovereignbase_logo.png"
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:site_name" content="Sovereignbase" />
+    <meta property="og:title" content="Sovereignbase station client" />
+    <meta
+      property="og:description"
+      content="Browser demo for @sovereignbase/station-client, a realtime client that synchronizes state between browser tabs."
+    />
+    <meta
+      property="og:url"
+      content="https://sovereignbase.dev/station-client/"
+    />
+    <meta
+      property="og:image"
+      content="https://sovereignbase.dev/sovereignbase_social_sharing_image.png"
+    />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="Sovereignbase station client realtime browser demo"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Sovereignbase station client" />
+    <meta
+      name="twitter:description"
+      content="Browser demo for @sovereignbase/station-client, a realtime client that synchronizes state between browser tabs."
+    />
+    <meta
+      name="twitter:image"
+      content="https://sovereignbase.dev/sovereignbase_social_sharing_image.png"
+    />
+    <meta
+      name="twitter:image:alt"
+      content="Sovereignbase station client realtime browser demo"
+    />
+    <meta name="twitter:creator" content="@jortsupetterson" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://sovereignbase.dev/station-client/#organization",
+            "name": "Sovereignbase",
+            "url": "https://github.com/sovereignbase",
+            "alternateName": ["@sovereignbase"],
+            "logo": {
+              "@type": "ImageObject",
+              "url": "https://sovereignbase.dev/sovereignbase_logo.png",
+              "width": 320,
+              "height": 320
+            },
+            "sameAs": [
+              "https://github.com/sovereignbase",
+              "https://jsr.io/@sovereignbase",
+              "https://www.npmjs.com/org/sovereignbase"
+            ]
+          },
+          {
+            "@type": "Person",
+            "@id": "https://sovereignbase.dev/station-client/#author",
+            "name": "Jori Lehtinen",
+            "url": "https://github.com/jortsupetterson",
+            "alternateName": ["jortsupetterson", "@jortsupetterson"],
+            "sameAs": [
+              "https://github.com/jortsupetterson",
+              "https://www.npmjs.com/~jortsupetterson",
+              "https://jsr.io/user/ab186a13-a64f-429e-a757-927aa4fa6e6c",
+              "https://linkedin.com/in/jortsupetterson",
+              "https://x.com/jortsupetterson",
+              "https://www.youtube.com/@jortsupetterson"
+            ]
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://sovereignbase.dev/station-client/#website",
+            "url": "https://sovereignbase.dev/station-client/",
+            "name": "station-client",
+            "inLanguage": "en",
+            "publisher": {
+              "@id": "https://sovereignbase.dev/station-client/#organization"
+            }
+          },
+          {
+            "@type": "SoftwareSourceCode",
+            "@id": "https://sovereignbase.dev/station-client/#software",
+            "name": "@sovereignbase/station-client",
+            "alternateName": ["station-client"],
+            "url": "https://sovereignbase.dev/station-client/",
+            "description": "Realtime browser client that synchronizes state between tabs.",
+            "codeRepository": "https://github.com/sovereignbase/station-client",
+            "license": "https://www.apache.org/licenses/LICENSE-2.0",
+            "programmingLanguage": ["TypeScript", "JavaScript"],
+            "runtimePlatform": [
+              "Node.js",
+              "Web Browser",
+              "Cloudflare Workers",
+              "Edge Runtime"
+            ],
+            "keywords": [
+              "station-client",
+              "realtime client",
+              "browser sync",
+              "BroadcastChannel",
+              "WebSocket"
+            ],
+            "image": "https://sovereignbase.dev/sovereignbase_social_sharing_image.png",
+            "isAccessibleForFree": true,
+            "author": {
+              "@id": "https://sovereignbase.dev/station-client/#author"
+            },
+            "maintainer": {
+              "@id": "https://sovereignbase.dev/station-client/#organization"
+            },
+            "publisher": {
+              "@id": "https://sovereignbase.dev/station-client/#organization"
+            },
+            "sameAs": [
+              "https://jsr.io/@sovereignbase/station-client",
+              "https://www.npmjs.com/package/@sovereignbase/station-client"
+            ]
+          },
+          {
+            "@type": "WebPage",
+            "@id": "https://sovereignbase.dev/station-client/#webpage",
+            "url": "https://sovereignbase.dev/station-client/",
+            "name": "Sovereignbase station client",
+            "description": "Browser demo for @sovereignbase/station-client, a realtime client that synchronizes state between browser tabs.",
+            "inLanguage": "en",
+            "isPartOf": {
+              "@id": "https://sovereignbase.dev/station-client/#website"
+            },
+            "about": {
+              "@id": "https://sovereignbase.dev/station-client/#software"
+            },
+            "author": {
+              "@id": "https://sovereignbase.dev/station-client/#author"
+            },
+            "publisher": {
+              "@id": "https://sovereignbase.dev/station-client/#organization"
+            },
+            "primaryImageOfPage": {
+              "@type": "ImageObject",
+              "url": "https://sovereignbase.dev/sovereignbase_social_sharing_image.png",
+              "width": 1200,
+              "height": 630
+            }
+          }
+        ]
+      }
+    </script>
     <style>
       :root {
         color-scheme: dark;
         font-family: 'IBM Plex Sans', 'Segoe UI', sans-serif;
-        --bg: #060606;
-        --panel: rgba(255, 255, 255, 0.05);
-        --panel-strong: rgba(255, 255, 255, 0.08);
-        --stroke: rgba(255, 255, 255, 0.14);
-        --stroke-strong: rgba(255, 255, 255, 0.22);
-        --text: #fff;
-        --text-soft: rgba(255, 255, 255, 0.72);
-        --accent: #97f0ff;
-        --accent-soft: rgba(151, 240, 255, 0.16);
-        background: var(--bg);
-        color: var(--text);
+        background: #000;
+        color: #fff;
       }
 
       * {
@@ -35,66 +198,39 @@
         min-height: 100vh;
         background:
           radial-gradient(
-            circle at 15% 20%,
-            rgba(151, 240, 255, 0.16),
-            transparent 28%
-          ),
-          radial-gradient(
-            circle at 85% 0%,
-            rgba(255, 214, 153, 0.12),
-            transparent 24%
-          ),
-          radial-gradient(
             circle at top,
             rgba(255, 255, 255, 0.1),
             transparent 36%
           ),
-          var(--bg);
-        color: var(--text);
+          #000;
+        color: #fff;
       }
 
       main {
-        width: min(100%, 46rem);
+        width: min(100%, 42rem);
         margin: 0 auto;
         padding: 1.25rem;
       }
 
       .shell {
         display: grid;
-        gap: 1.5rem;
-        padding: 1.4rem;
-        border: 1px solid var(--stroke);
-        border-radius: 1.5rem;
-        background:
-          linear-gradient(
-            180deg,
-            rgba(255, 255, 255, 0.06),
-            rgba(255, 255, 255, 0.03)
-          ),
-          rgba(255, 255, 255, 0.02);
-        box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.42);
-        backdrop-filter: blur(16px);
-      }
-
-      .eyebrow {
-        margin: 0;
-        font-size: 0.78rem;
-        letter-spacing: 0.18em;
-        text-transform: uppercase;
-        color: var(--accent);
+        gap: 1.25rem;
+        padding: 1.25rem;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 1.25rem;
+        background: rgba(255, 255, 255, 0.04);
+        box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.45);
       }
 
       h1 {
         margin: 0;
         font-size: clamp(2rem, 8vw, 3.4rem);
-        line-height: 0.92;
-        max-width: 12ch;
+        line-height: 0.95;
       }
 
       .lede {
         margin: 0;
-        max-width: 34rem;
-        color: var(--text-soft);
+        color: rgba(255, 255, 255, 0.76);
         line-height: 1.6;
       }
 
@@ -105,48 +241,33 @@
 
       label {
         display: grid;
-        gap: 0.65rem;
-        padding: 0.95rem 1rem;
-        border: 1px solid var(--stroke);
-        border-radius: 1rem;
-        background: var(--panel);
-        font-size: 0.78rem;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-        color: var(--text-soft);
+        gap: 0.55rem;
+        font-size: 0.95rem;
       }
 
-      input {
+      input,
+      a {
+        border-radius: 999px;
+      }
+
+      input[type='text'],
+      input[type='number'] {
         width: 100%;
         padding: 0.9rem 1rem;
-        border: 1px solid var(--stroke);
-        border-radius: 0.9rem;
-        background: rgba(0, 0, 0, 0.35);
-        color: var(--text);
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        background: #050505;
+        color: #fff;
         font: inherit;
-        font-size: 1rem;
-        letter-spacing: 0;
-        text-transform: none;
-        transition:
-          border-color 160ms ease,
-          background-color 160ms ease,
-          box-shadow 160ms ease,
-          transform 160ms ease;
       }
 
       input::placeholder {
         color: rgba(255, 255, 255, 0.38);
       }
 
-      input:hover {
-        border-color: var(--stroke-strong);
-        background: rgba(255, 255, 255, 0.06);
-      }
-
-      input:focus {
+      input[type='text']:focus,
+      input[type='number']:focus {
         outline: none;
-        border-color: var(--accent);
-        box-shadow: 0 0 0 0.28rem var(--accent-soft);
+        border-color: rgba(255, 255, 255, 0.3);
       }
 
       .toggle {
@@ -154,16 +275,17 @@
         align-items: center;
         justify-content: space-between;
         gap: 1rem;
+        padding: 0.9rem 1rem;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.04);
       }
 
       .toggle input {
         width: 1.35rem;
         height: 1.35rem;
         margin: 0;
-        padding: 0;
-        border-radius: 0.35rem;
-        accent-color: var(--accent);
-        box-shadow: none;
+        accent-color: #fff;
       }
 
       .links {
@@ -178,24 +300,16 @@
         align-items: center;
         justify-content: center;
         gap: 0.6rem;
-        min-height: 2.75rem;
-        padding: 0.8rem 1rem;
-        border: 1px solid var(--stroke);
-        border-radius: 1rem;
-        background: var(--panel);
-        color: var(--text);
+        min-height: 2.5rem;
+        padding: 0.75rem 1rem;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        color: #fff;
         text-decoration: none;
-        transition:
-          transform 160ms ease,
-          border-color 160ms ease,
-          background-color 160ms ease;
       }
 
       .links a:hover,
       .spec-link:hover {
-        transform: translateY(-1px);
-        border-color: var(--stroke-strong);
-        background: var(--panel-strong);
+        border-color: rgba(255, 255, 255, 0.22);
       }
 
       .spec-link {
@@ -218,7 +332,7 @@
         }
 
         .shell {
-          padding: 1.9rem;
+          padding: 1.75rem;
         }
 
         .controls {
@@ -234,7 +348,6 @@
   <body>
     <main>
       <section class="shell">
-        <p class="eyebrow">Browser Demo</p>
         <h1>A realtime client for sovereignbase</h1>
         <p class="lede">
           Open this page in another tab and edit either view. The form state
