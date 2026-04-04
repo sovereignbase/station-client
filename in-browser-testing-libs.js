@@ -6,7 +6,7 @@ const snapshot = JSON.parse(localStorage.getItem('state')) ?? undefined
 const state = new OOStruct(
   {
     name: '',
-    counter: 0,
+    amount: 0,
     flag: false,
   },
   snapshot
@@ -14,22 +14,26 @@ const state = new OOStruct(
 
 const nameInput = document.getElementById('name')
 
-const counterInput = document.getElementById('counter')
+const amountInput = document.getElementById('amount')
 
 const flagInput = document.getElementById('flag')
 
-nameInput.addEventListener('input', async (ev) => {
-  state.update('name', ev.data)
+nameInput.value = state.read('name')
+amountInput.value = state.read('amount')
+flagInput.checked = state.read('flag')
+
+nameInput.addEventListener('change', async (ev) => {
+  state.update('name', ev.target.value)
   state.snapshot()
 })
 
-counterInput.addEventListener('input', async (ev) => {
-  state.update('counter', ev.data)
+amountInput.addEventListener('change', async (ev) => {
+  state.update('amount', ev.target.valueAsNumber)
   state.snapshot()
 })
 
-flagInput.addEventListener('input', async (ev) => {
-  state.update('flag', ev.data)
+flagInput.addEventListener('change', async (ev) => {
+  state.update('flag', ev.target.checked)
   state.snapshot()
 })
 
@@ -42,12 +46,12 @@ state.addEventListener('delta', (ev) => {
 })
 
 station.addEventListener('message', (ev) => {
-  state.merge(ev)
+  state.merge(ev.detail)
 })
 
 state.addEventListener('change', (ev) => {
-  const { name, counter, flag } = ev.detail
+  const { name, amount, flag } = ev.detail
   if (name) nameInput.value = name
-  if (counter) counterInput.value = counter
-  if (flag) flagInput.value = flag
+  if (amount) amountInput.value = amount
+  if (flag) flagInput.checked = flag
 })
