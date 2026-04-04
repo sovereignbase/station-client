@@ -1,4 +1,3 @@
-import { stat } from 'node:fs'
 import { StationClient } from './dist/index.js'
 import { OOStruct } from '@sovereignbase/convergent-replicated-struct'
 
