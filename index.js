@@ -2112,22 +2112,22 @@ var nameInput = document.getElementById("name");
 var counterInput = document.getElementById("counter");
 var flagInput = document.getElementById("flag");
 nameInput.addEventListener("input", async (ev) => {
-  state.update.name = ev.data;
+  state.update("name", ev.data);
   state.snapshot();
 });
 counterInput.addEventListener("input", async (ev) => {
-  state.update.counter = ev.data;
+  state.update("counter", ev.data);
   state.snapshot();
 });
 flagInput.addEventListener("input", async (ev) => {
-  state.update.name = ev.data;
+  state.update("flag", ev.data);
   state.snapshot();
 });
 state.addEventListener("snapshot", (ev) => {
-  localStorage.setItem(JSON.stringify(ev.detail));
+  localStorage.setItem("state", JSON.stringify(ev.detail));
 });
 state.addEventListener("delta", (ev) => {
-  station.relay(ev.detail);
+  station.postMessage(ev.detail);
 });
 station.addEventListener("message", (ev) => {
   state.merge(ev);
