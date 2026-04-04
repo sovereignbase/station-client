@@ -24,3 +24,9 @@ export type StationClientEventListenerFor<
 > = K extends keyof StationClientEventMap<T>
   ? StationClientEventListener<T, K>
   : EventListenerOrEventListenerObject
+
+export type StationClientLocalMessageShape<T extends Record<string, unknown>> =
+  {
+    kind: 'relay' | 'transact'
+    message: T
+  }

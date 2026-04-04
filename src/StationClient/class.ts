@@ -2,6 +2,7 @@ import { encode, decode } from '@msgpack/msgpack'
 import type {
   StationClientEventMap,
   StationClientEventListenerFor,
+  StationClientLocalMessageShape,
 } from '../.types/index.js'
 
 export class StationClient<T extends Record<string, unknown>> {
@@ -9,9 +10,15 @@ export class StationClient<T extends Record<string, unknown>> {
   private readonly lockName: string
   private readonly channelName: string
   private readonly webSocketUrl: string
+  private readonly cleanup = () => {
+    void this.opportunisticConnect()
+  }
   private broadcastChannel: BroadcastChannel | null = null
   private webSocket: WebSocket | null = null
   private isLeader: boolean = false
+  private isClosed: boolean = false
+  private isConnecting: boolean = false
+  private readonly outboundQueue: T[] = []
 
   constructor(webSocketUrl: string = '') {
     this.webSocketUrl = webSocketUrl
@@ -19,46 +26,58 @@ export class StationClient<T extends Record<string, unknown>> {
     this.lockName = `origin-channel-lock::${this.webSocketUrl}`
 
     this.broadcastChannel = new BroadcastChannel(this.channelName)
-    this.broadcastChannel.onmessage = (event: MessageEvent<T>) => {
-      const message = event.data
-      if (!message) return
-      this.eventTarget.dispatchEvent(
-        new CustomEvent('message', { detail: message })
-      )
+    this.broadcastChannel.onmessage = (
+      event: MessageEvent<StationClientLocalMessageShape<T>>
+    ) => {
+      const envelope = event.data
+      if (!envelope) return
 
+      if (envelope.kind === 'relay')
+        this.eventTarget.dispatchEvent(
+          new CustomEvent('message', { detail: envelope.message })
+        )
       if (!this.isLeader) return
-      if (!this.webSocket || this.webSocket.readyState !== WebSocket.OPEN)
-        return
 
-      this.webSocket.send(encode(message))
+      this.sendToStation(envelope.message)
     }
 
-    /** if navigator online, and on "online" event,  */
-    if (navigator.onLine) void this.opportunisticConnect()
+    if (this.webSocketUrl && navigator.onLine) void this.opportunisticConnect()
+    if (this.webSocketUrl) {
+      self.addEventListener('online', this.cleanup)
+    }
+  }
+  /**main methods*/
+  relay(message: T) {
+    this.broadcastChannel?.postMessage({ kind: 'relay', message })
+    this.sendToStation(message)
+  }
 
-    self.addEventListener('online', () => {
-      void this.opportunisticConnect()
-    })
+  transact(message: T) {
+    if (this.isLeader) {
+      this.sendToStation(message)
+      return
+    }
+
+    this.broadcastChannel?.postMessage({ kind: 'transact', message })
   }
 
   close(): void {
+    this.isClosed = true
+    self.removeEventListener('online', this.cleanup)
+
     try {
       this.broadcastChannel?.close()
     } catch {}
     try {
       this.webSocket?.close(1000, 'closed')
     } catch {}
+
     this.webSocket = null
     this.isLeader = false
   }
 
-  /**
-   * Registers an event listener.
-   *
-   * @param type - The event type to listen for.
-   * @param listener - The listener to register.
-   * @param options - Listener registration options.
-   */
+  /**listeners*/
+
   addEventListener<K extends keyof StationClientEventMap<T>>(
     type: K,
     listener: StationClientEventListenerFor<T, K> | null,
@@ -71,13 +90,6 @@ export class StationClient<T extends Record<string, unknown>> {
     )
   }
 
-  /**
-   * Removes an event listener.
-   *
-   * @param type - The event type to stop listening for.
-   * @param listener - The listener to remove.
-   * @param options - Listener removal options.
-   */
   removeEventListener<K extends keyof StationClientEventMap<T>>(
     type: K,
     listener: StationClientEventListenerFor<T, K> | null,
@@ -90,58 +102,102 @@ export class StationClient<T extends Record<string, unknown>> {
     )
   }
 
-  /**Helper*/
-  private async opportunisticConnect() {
-    while (true) {
-      await self.navigator.locks.request(
-        this.lockName,
-        { ifAvailable: true },
-        async (lockHandle) => {
-          if (!lockHandle) return
-          this.isLeader = true
+  /**helpers*/
 
-          try {
-            this.webSocket = new WebSocket(this.webSocketUrl)
-          } catch {}
+  private sendToStation(message: T) {
+    if (!this.isLeader || !this.webSocketUrl) return
 
-          if (!this.webSocket || this.webSocket.readyState !== WebSocket.OPEN)
-            return
+    if (!this.webSocket || this.webSocket.readyState !== WebSocket.OPEN) {
+      this.outboundQueue.push(message)
+      return
+    }
 
-          this.webSocket.onmessage = async (
-            event: MessageEvent<ArrayBuffer>
-          ) => {
-            void (async () => {
-              const message = decode(event.data)
-              if (!message) return
-              // this.eventlistheners
-              this.broadcastChannel?.postMessage(message as T)
-            })
-          }
+    try {
+      this.webSocket.send(encode(message))
+    } catch {}
+  }
 
-          this.webSocket.onclose = () => {
-            if (this.webSocket === this.webSocket) this.webSocket = null
-          }
+  private flushOutboundQueue() {
+    if (!this.webSocket || this.webSocket.readyState !== WebSocket.OPEN) return
 
-          await new Promise<void>((resolve) => {
-            this.webSocket?.addEventListener('close', () => resolve(), {
-              once: true,
-            })
-          })
+    while (this.outboundQueue.length > 0) {
+      const message = this.outboundQueue.shift()
+      if (!message) continue
 
-          this.isLeader = false
-          if (this.webSocket === this.webSocket) this.webSocket = null
-        }
-      )
-
-      await new Promise<void>((resolve) => setTimeout(resolve, 500))
+      try {
+        this.webSocket.send(encode(message))
+      } catch {
+        this.outboundQueue.unshift(message)
+        return
+      }
     }
   }
-  /**peer to peer*/
-  relay(message: T) {
-    this.broadcastChannel?.postMessage(message)
-  }
-  /**client to server*/
-  transact(message: T) {
-    this.webSocket?.send(encode(message))
+
+  private async opportunisticConnect() {
+    if (this.isClosed || this.isConnecting || !this.webSocketUrl) return
+    if (!self.navigator.locks) return
+
+    this.isConnecting = true
+
+    try {
+      while (!this.isClosed) {
+        await self.navigator.locks.request(
+          this.lockName,
+          { ifAvailable: true },
+          async (lockHandle) => {
+            if (!lockHandle || this.isClosed) return
+            this.isLeader = true
+
+            let socket: WebSocket
+
+            try {
+              socket = new WebSocket(this.webSocketUrl)
+            } catch {
+              this.isLeader = false
+              this.webSocket = null
+              return
+            }
+
+            socket.binaryType = 'arraybuffer'
+            this.webSocket = socket
+
+            socket.onopen = () => {
+              this.flushOutboundQueue()
+            }
+
+            socket.onmessage = (event: MessageEvent<ArrayBuffer>) => {
+              const message = decode(event.data)
+              if (!message) return
+
+              this.eventTarget.dispatchEvent(
+                new CustomEvent('message', { detail: message })
+              )
+
+              this.broadcastChannel?.postMessage({
+                kind: 'relay',
+                message: message as T,
+              })
+            }
+
+            socket.onclose = () => {
+              if (this.webSocket === socket) this.webSocket = null
+              this.isLeader = false
+            }
+
+            await new Promise<void>((resolve) => {
+              socket.addEventListener('close', () => resolve(), { once: true })
+            })
+
+            this.isLeader = false
+            if (this.webSocket === socket) this.webSocket = null
+          }
+        )
+
+        if (this.isClosed) return
+        await new Promise<void>((resolve) => setTimeout(resolve, 500))
+      }
+    } finally {
+      this.isConnecting = false
+    }
   }
 }
