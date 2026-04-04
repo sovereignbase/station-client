@@ -1446,7 +1446,7 @@ var StationClient = class {
   lockName;
   channelName;
   webSocketUrl;
-  onlineListener = () => {
+  onlineHandler = () => {
     void this.opportunisticConnect();
   };
   broadcastChannel = null;
@@ -1463,18 +1463,33 @@ var StationClient = class {
     this.broadcastChannel.onmessage = (event) => {
       const envelope = event.data;
       if (!envelope) return;
-      if (envelope.kind === "relay") this.dispatchMessage(envelope.message);
+      if (envelope.kind === "relay")
+        this.eventTarget.dispatchEvent(
+          new CustomEvent("message", { detail: envelope.message })
+        );
       if (!this.isLeader) return;
-      this.sendToServer(envelope.message);
+      this.sendToStation(envelope.message);
     };
     if (this.webSocketUrl && navigator.onLine) void this.opportunisticConnect();
     if (this.webSocketUrl) {
-      self.addEventListener("online", this.onlineListener);
+      self.addEventListener("online", this.onlineHandler);
     }
+  }
+  /**main methods*/
+  relay(message) {
+    this.broadcastChannel?.postMessage({ kind: "relay", message });
+    this.sendToStation(message);
+  }
+  transact(message) {
+    if (this.isLeader) {
+      this.sendToStation(message);
+      return;
+    }
+    this.broadcastChannel?.postMessage({ kind: "transact", message });
   }
   close() {
     this.isClosed = true;
-    self.removeEventListener("online", this.onlineListener);
+    self.removeEventListener("online", this.onlineHandler);
     try {
       this.broadcastChannel?.close();
     } catch {
@@ -1486,6 +1501,7 @@ var StationClient = class {
     this.webSocket = null;
     this.isLeader = false;
   }
+  /**listeners*/
   addEventListener(type, listener, options) {
     this.eventTarget.addEventListener(
       type,
@@ -1499,6 +1515,34 @@ var StationClient = class {
       listener,
       options
     );
+  }
+  /**helpers*/
+  sendToStation(message) {
+    if (!this.isLeader || !this.webSocketUrl) return;
+    if (!this.webSocket || this.webSocket.readyState !== WebSocket.OPEN) {
+      if (self.navigator.onLine) {
+        if (this.outboundQueue.length >= 64) this.outboundQueue.shift();
+        this.outboundQueue.push(message);
+      }
+      return;
+    }
+    try {
+      this.webSocket.send(encode(message));
+    } catch {
+    }
+  }
+  flushOutboundQueue() {
+    if (!this.webSocket || this.webSocket.readyState !== WebSocket.OPEN) return;
+    while (this.outboundQueue.length > 0) {
+      const message = this.outboundQueue.shift();
+      if (!message) continue;
+      try {
+        this.webSocket.send(encode(message));
+      } catch {
+        this.outboundQueue.unshift(message);
+        return;
+      }
+    }
   }
   async opportunisticConnect() {
     if (this.isClosed || this.isConnecting || !this.webSocketUrl) return;
@@ -1528,7 +1572,9 @@ var StationClient = class {
             socket.onmessage = (event) => {
               const message = decode(event.data);
               if (!message) return;
-              this.dispatchMessage(message);
+              this.eventTarget.dispatchEvent(
+                new CustomEvent("message", { detail: message })
+              );
               this.broadcastChannel?.postMessage({
                 kind: "relay",
                 message
@@ -1551,44 +1597,6 @@ var StationClient = class {
     } finally {
       this.isConnecting = false;
     }
-  }
-  dispatchMessage(message) {
-    this.eventTarget.dispatchEvent(new CustomEvent("message", { detail: message }));
-  }
-  sendToServer(message) {
-    if (!this.isLeader || !this.webSocketUrl) return;
-    if (!this.webSocket || this.webSocket.readyState !== WebSocket.OPEN) {
-      this.outboundQueue.push(message);
-      return;
-    }
-    try {
-      this.webSocket.send(encode(message));
-    } catch {
-    }
-  }
-  flushOutboundQueue() {
-    if (!this.webSocket || this.webSocket.readyState !== WebSocket.OPEN) return;
-    while (this.outboundQueue.length > 0) {
-      const message = this.outboundQueue.shift();
-      if (!message) continue;
-      try {
-        this.webSocket.send(encode(message));
-      } catch {
-        this.outboundQueue.unshift(message);
-        return;
-      }
-    }
-  }
-  relay(message) {
-    this.broadcastChannel?.postMessage({ kind: "relay", message });
-    this.sendToServer(message);
-  }
-  transact(message) {
-    if (this.isLeader) {
-      this.sendToServer(message);
-      return;
-    }
-    this.broadcastChannel?.postMessage({ kind: "transact", message });
   }
 };
 

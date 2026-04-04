@@ -10,7 +10,7 @@ export class StationClient<T extends Record<string, unknown>> {
   private readonly lockName: string
   private readonly channelName: string
   private readonly webSocketUrl: string
-  private readonly cleanup = () => {
+  private readonly onlineHandler = () => {
     void this.opportunisticConnect()
   }
   private broadcastChannel: BroadcastChannel | null = null
@@ -43,7 +43,7 @@ export class StationClient<T extends Record<string, unknown>> {
 
     if (this.webSocketUrl && navigator.onLine) void this.opportunisticConnect()
     if (this.webSocketUrl) {
-      self.addEventListener('online', this.cleanup)
+      self.addEventListener('online', this.onlineHandler)
     }
   }
   /**main methods*/
@@ -63,7 +63,7 @@ export class StationClient<T extends Record<string, unknown>> {
 
   close(): void {
     this.isClosed = true
-    self.removeEventListener('online', this.cleanup)
+    self.removeEventListener('online', this.onlineHandler)
 
     try {
       this.broadcastChannel?.close()
@@ -108,7 +108,10 @@ export class StationClient<T extends Record<string, unknown>> {
     if (!this.isLeader || !this.webSocketUrl) return
 
     if (!this.webSocket || this.webSocket.readyState !== WebSocket.OPEN) {
-      this.outboundQueue.push(message)
+      if (self.navigator.onLine) {
+        if (this.outboundQueue.length >= 64) this.outboundQueue.shift()
+        this.outboundQueue.push(message)
+      }
       return
     }
 
