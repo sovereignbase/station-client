@@ -1,1 +1,1 @@
-export { StationClient } from './StationClient/index.js'
+export { StationClient } from './StationClient/class.js'
