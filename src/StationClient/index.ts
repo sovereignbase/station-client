@@ -136,8 +136,8 @@ export class StationClient<T extends Record<string, unknown>> {
       await new Promise<void>((resolve) => setTimeout(resolve, 500))
     }
   }
-  relay(message: T) {}
-  backup(snapshot: T) {
-    this.webSocket
+  postMessage(message: T) {
+    this.broadcastChannel?.postMessage(message)
   }
+  backup(snapshot: T) {}
 }
