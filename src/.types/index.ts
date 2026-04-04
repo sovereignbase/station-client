@@ -40,7 +40,7 @@ export type StationClientLocalMessageShape<T extends Record<string, unknown>> =
       kind: 'transact-response'
       id: string
       target: string
-      message: T
+      message: T | false
     }
   | {
       kind: 'transact-abort'
@@ -52,7 +52,7 @@ export type StationClientRemoteMessageShape<T extends Record<string, unknown>> =
   | readonly ['station-client-request', string, T]
 
 export type StationClientPendingTransact<T extends Record<string, unknown>> = {
-  resolve: (message: T) => void
+  resolve: (message: T | false) => void
   reject: (reason?: unknown) => void
   cleanup: () => void
 }

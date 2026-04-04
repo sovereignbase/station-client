@@ -72,6 +72,21 @@ export class StationClient<T extends Record<string, unknown>> {
 
       if (!this.isLeader) return
 
+      if (
+        !this.webSocketUrl ||
+        self.navigator.onLine !== true ||
+        !this.webSocket ||
+        this.webSocket.readyState !== WebSocket.OPEN
+      ) {
+        this.broadcastChannel?.postMessage({
+          kind: 'transact-response',
+          id: envelope.id,
+          target: envelope.source,
+          message: false,
+        })
+        return
+      }
+
       this.pendingTransactTargets.set(envelope.id, envelope.source)
       this.sendToStation([
         'station-client-request',
@@ -91,17 +106,33 @@ export class StationClient<T extends Record<string, unknown>> {
     this.sendToStation(message)
   }
 
-  transact(message: T, options: StationClientTransactOptions = {}): Promise<T> {
+  transact(
+    message: T,
+    options: StationClientTransactOptions = {}
+  ): Promise<T | false> {
     const id = self.crypto.randomUUID()
     const { signal } = options
 
-    return new Promise<T>((resolve, reject) => {
+    return new Promise<T | false>((resolve, reject) => {
       const abortReason = () =>
         signal?.reason ??
         new DOMException('The operation was aborted.', 'AbortError')
 
       if (signal?.aborted) {
         reject(abortReason())
+        return
+      }
+
+      if (!this.webSocketUrl || self.navigator.onLine !== true) {
+        resolve(false)
+        return
+      }
+
+      if (
+        this.isLeader &&
+        (!this.webSocket || this.webSocket.readyState !== WebSocket.OPEN)
+      ) {
+        resolve(false)
         return
       }
 
