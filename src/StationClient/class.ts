@@ -197,7 +197,7 @@ export class StationClient<T extends Record<string, unknown>> {
         )
 
         if (this.isClosed) return
-        await new Promise<void>((resolve) => setTimeout(resolve, 500))
+        await new Promise<void>((resolve) => setTimeout(resolve, 10_000))
       }
     } finally {
       this.isConnecting = false
