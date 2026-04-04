@@ -23,67 +23,319 @@
         github: 'sovereignbase/station-client',
         shortName: 'station-client',
         xref: 'web-platform',
-        group: 'none',
         lint: {
           'informative-dfn': true,
           'local-refs-exist': true,
           'no-unused-dfns': true,
+        },
+        localBiblio: {
+          MSGPACK: {
+            href: 'https://msgpack.org/',
+          },
         },
       }
     </script>
   </head>
   <body>
     <section id="abstract">
-      <p>This is required.</p>
+      <p>
+        This specification defines a station client for coordinating same-origin
+        execution contexts around a single logical connection to a Sovereignbase
+        base station. It defines an abstract processing model and a JavaScript
+        reference binding for the current package.
+      </p>
     </section>
     <section id="sotd">
-      <p>This is required.</p>
+      <p>
+        This document is an unofficial editor's draft. It describes the current
+        behavior of the reference implementation in <code>src/</code> and may
+        change without notice.
+      </p>
     </section>
     <section class="informative">
       <h2>Introduction</h2>
-      <p>Some informative introductory text.</p>
-      <aside class="note" title="A useful note">
-        <p>I'm a note!</p>
+      <p>
+        A <a>station client</a> provides a local-first coordination layer for
+        applications that run in multiple
+        <a data-lt="same-origin context">same-origin contexts</a> while sharing
+        one opportunistic connection to a Sovereignbase <a>base station</a>.
+      </p>
+      <p>
+        The abstract model in this specification is intentionally
+        language-agnostic. It defines relaying, request-response transactions,
+        leadership, and shutdown behavior without requiring a particular local
+        coordination mechanism or transport stack.
+      </p>
+      <p>
+        The JavaScript reference binding defined below maps that abstract model
+        to a concrete package surface and to a concrete base station wire
+        convention.
+      </p>
+      <aside class="note" title="Local-first behavior">
+        <p>
+          Local coordination is the primary concern. The base station transport
+          is opportunistic rather than foundational.
+        </p>
       </aside>
     </section>
+    <section id="conformance">
+      <h2>Conformance</h2>
+      <p>
+        The key words <em>MUST</em>, <em>MUST NOT</em>, <em>SHOULD</em>,
+        <em>SHOULD NOT</em>, and <em>MAY</em> in this document are to be
+        interpreted as described in RFC 2119.
+      </p>
+      <p>
+        Conformance requirements phrased as algorithms or assertions apply to
+        implementations of the station client model and to the JavaScript
+        reference binding defined in this specification.
+      </p>
+    </section>
     <section>
-      <h2>A section</h2>
-      <aside class="example">
-        <p>This is an example.</p>
-        <pre class="js">
-        // Automatic syntax highlighting
-        function someJavaScript(){}
-        </pre>
-      </aside>
+      <h2>Terminology</h2>
+      <dl>
+        <dt><dfn>base station</dfn></dt>
+        <dd>
+          An external endpoint with which a station client exchanges application
+          messages and transaction responses.
+        </dd>
+        <dt><dfn>station client</dfn></dt>
+        <dd>
+          A local agent that coordinates same-origin execution contexts and may
+          maintain an opportunistic transport to a base station.
+        </dd>
+        <dt><dfn>same-origin context</dfn></dt>
+        <dd>
+          A browsing context or worker that participates in the same station
+          client coordination group.
+        </dd>
+        <dt><dfn>leader context</dfn></dt>
+        <dd>
+          The same-origin context that currently owns the active base station
+          transport for a coordination group.
+        </dd>
+        <dt><dfn>follower context</dfn></dt>
+        <dd>
+          A same-origin context that participates in local coordination but does
+          not currently own the active base station transport.
+        </dd>
+        <dt><dfn>application message</dfn></dt>
+        <dd>
+          An implementation-defined payload object that represents domain data
+          exchanged through the station client.
+        </dd>
+        <dt><dfn>coordination group</dfn></dt>
+        <dd>
+          The set of station client instances that share the same origin and the
+          same configured base station endpoint identifier.
+        </dd>
+      </dl>
+    </section>
+    <section>
+      <h2>Station Client Model</h2>
+      <p>
+        A <a>station client</a> operates over a <a>coordination group</a>. Each
+        group MAY be configured with a <a>base station</a> endpoint identifier
+        such as a WebSocket URL. When no endpoint identifier is configured, the
+        group operates in local-only mode.
+      </p>
+      <p>
+        At most one <a>leader context</a> MUST own the active base station
+        transport for a coordination group at a time. Other contexts in the same
+        group MUST behave as
+        <a data-lt="follower context">follower contexts</a>.
+      </p>
       <section>
-        <h3>I'm a sub-section</h3>
-        <p class="issue" data-number="121">
-          <!-- Issue can automatically be populated from GitHub -->
+        <h3>Relay</h3>
+        <p>
+          To <dfn>relay</dfn> an <a>application message</a> is to publish that
+          application message to other same-origin contexts in the same
+          coordination group.
+        </p>
+        <p>
+          A relay operation MUST NOT require a base station transport in order
+          to complete locally.
+        </p>
+        <p>
+          A leader context MAY opportunistically forward a relayed application
+          message to the base station transport.
+        </p>
+        <p>
+          A relay operation MUST NOT synthesize a loopback local delivery back
+          to the calling context unless an implementation explicitly specifies
+          otherwise.
+        </p>
+      </section>
+      <section>
+        <h3>Transact</h3>
+        <p>
+          To <dfn>transact</dfn> is to submit an application message as a
+          request to the base station and await a correlated response.
+        </p>
+        <p>
+          A transact operation MUST resolve with the corresponding application
+          message response when the base station returns one.
+        </p>
+        <p>
+          A transact operation MAY instead resolve with a transport-unavailable
+          result when the request cannot be issued, for example because no base
+          station endpoint is configured, because the environment is offline, or
+          because no active base station transport is currently available.
+        </p>
+        <p>
+          A transact operation MAY be aborted by the caller. A caller-supplied
+          abort signal is distinct from any implementation-defined cleanup
+          deadline used to discard stale routing state.
+        </p>
+      </section>
+      <section>
+        <h3>Inbound Messages</h3>
+        <p>
+          When a station client receives an application message from the base
+          station that is not a transact response, it MUST dispatch that
+          application message locally and SHOULD <a>relay</a> it to other
+          same-origin contexts in the same coordination group.
+        </p>
+      </section>
+      <section>
+        <h3>Shutdown</h3>
+        <p>
+          When a station client is closed, it MUST release local coordination
+          resources, cease further transport activity, and reject any pending
+          transact operations that are still owned by that instance.
         </p>
       </section>
     </section>
-    <section data-dfn-for="Foo">
-      <h2>Start your spec!</h2>
-      <pre class="idl">
-        [Exposed=Window]
-        interface Foo {
-        attribute DOMString bar;
-        undefined doTheFoo();
+    <section>
+      <h2>JavaScript Reference Binding</h2>
+      <p>
+        This section defines the JavaScript package surface exposed by the
+        current reference implementation.
+      </p>
+      <section>
+        <h3>IDL</h3>
+        <pre class="idl">
+        typedef object StationClientMessage;
+        typedef (StationClientMessage or boolean) StationClientTransactResult;
+
+        dictionary StationClientTransactOptions {
+          AbortSignal signal;
+          [EnforceRange] unsigned long ttlMs = 30000;
         };
-      </pre>
-      <p>The <dfn>Foo</dfn> interface represents a {{Foo}}.</p>
-      <p>
-        The <dfn>doTheFoo()</dfn> method does the foo. Call it by running
-        {{Foo/doTheFoo()}}.
-      </p>
-      <ol class="algorithm">
-        <li>A |variable:DOMString| can be declared like this.</li>
-      </ol>
-    </section>
-    <section id="conformance">
-      <p>
-        This is required for specifications that contain normative material.
-      </p>
+
+        [Exposed=(Window,Worker)]
+        interface StationClient : EventTarget {
+          constructor(optional USVString webSocketUrl = "");
+          undefined relay(StationClientMessage message);
+          Promise&lt;StationClientTransactResult&gt; transact(
+            StationClientMessage message,
+            optional StationClientTransactOptions options = {}
+          );
+          undefined close();
+        };
+        </pre>
+      </section>
+      <section>
+        <h3>Construction</h3>
+        <p>
+          Constructing a {{StationClient}} with an empty
+          <code>webSocketUrl</code>
+          places the instance in local-only mode.
+        </p>
+        <p>
+          Instances constructed with the same origin and the same
+          <code>webSocketUrl</code> participate in the same coordination group.
+        </p>
+      </section>
+      <section>
+        <h3>The <code>relay()</code> Method</h3>
+        <p>
+          The {{StationClient/relay(message)}} method performs a <a>relay</a>
+          operation by publishing |message| to other same-origin contexts in the
+          coordination group.
+        </p>
+        <p>
+          If the receiving instance currently owns the active base station
+          transport, it MAY also forward |message| to the base station.
+        </p>
+        <p>
+          Calling {{StationClient/relay(message)}} does not by itself dispatch a
+          local loopback <code>message</code> event to the same instance.
+        </p>
+      </section>
+      <section>
+        <h3>The <code>transact()</code> Method</h3>
+        <p>
+          The {{StationClient/transact(message, options)}} method performs a
+          <a>transact</a> operation by submitting |message| as a request to the
+          base station and returning a promise.
+        </p>
+        <p>
+          That promise resolves with an application message response when a
+          correlated response is received from the base station.
+        </p>
+        <p>
+          That promise resolves with <code>false</code> when the binding can
+          determine that the request cannot presently be issued.
+        </p>
+        <p>
+          If <code>options.signal</code> is aborted, the promise rejects with an
+          abort error.
+        </p>
+        <p>
+          <code>options.ttlMs</code> sets the leader-side stale-routing lifetime
+          for a pending follower request. It is not a general request timeout.
+        </p>
+      </section>
+      <section>
+        <h3>The <code>close()</code> Method</h3>
+        <p>
+          The {{StationClient/close()}} method closes the instance, releases
+          local coordination resources, closes the active base station transport
+          if owned by the instance, and rejects any still-pending transact
+          operations owned by the instance.
+        </p>
+      </section>
+      <section>
+        <h3>Events</h3>
+        <p>
+          A {{StationClient}} dispatches a <code>message</code> event when it
+          receives an application message from another same-origin context or
+          from the base station.
+        </p>
+        <p>
+          The event object MUST be a {{CustomEvent}}, and its
+          {{CustomEvent/detail}} attribute MUST contain the application message.
+        </p>
+        <p>
+          Transact responses are delivered through the promise returned by
+          {{StationClient/transact(message, options)}} rather than through the
+          <code>message</code> event.
+        </p>
+      </section>
+      <section>
+        <h3>Base Station Wire Convention</h3>
+        <p>
+          The JavaScript reference binding uses a WebSocket-based base station
+          transport and serializes transport payloads with MessagePack
+          [[MSGPACK]].
+        </p>
+        <p>
+          A relayed or inbound application message is transported as the
+          application message value itself.
+        </p>
+        <p>
+          A transact request is transported as the tuple
+          <code>["station-client-request", id, message]</code>, where
+          <code>id</code> is a binding-generated request identifier.
+        </p>
+        <p>
+          A transact response is transported as the tuple
+          <code>["station-client-response", id, message]</code>, where
+          <code>id</code> identifies the pending transact operation being
+          fulfilled.
+        </p>
+      </section>
     </section>
   </body>
 </html>
