@@ -62,7 +62,7 @@ export type StationClientLocalMessageShape<T extends Record<string, unknown>> =
     }
 
 /**
- * Represents a message exchanged with the station transport.
+ * Represents a message exchanged with the base station transport.
  *
  * @template T The application message shape.
  */

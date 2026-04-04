@@ -10,7 +10,7 @@ import type {
 } from '../.types/index.js'
 
 /**
- * Represents a base station client that coordinates local tab messaging and an opportunistic station transport.
+ * Represents a base station client that coordinates local tab messaging and an opportunistic base station transport.
  *
  * @template T The application message shape.
  */
@@ -127,7 +127,7 @@ export class StationClient<T extends Record<string, unknown>> {
   /**main methods*/
 
   /**
-   * Broadcasts a message to other same-origin contexts and opportunistically forwards it to the station.
+   * Broadcasts a message to other same-origin contexts and opportunistically forwards it to the base station.
    *
    * @param message The message to broadcast.
    */
