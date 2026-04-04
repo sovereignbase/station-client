@@ -116,6 +116,8 @@ export class StationClient<T extends Record<string, unknown>> {
   }
   /**main methods*/
   relay(message: T) {
+    if (this.isClosed) return
+
     this.broadcastChannel?.postMessage({ kind: 'relay', message })
     this.sendToStation(message)
   }
@@ -124,6 +126,8 @@ export class StationClient<T extends Record<string, unknown>> {
     message: T,
     options: StationClientTransactOptions = {}
   ): Promise<T | false> {
+    if (this.isClosed) return Promise.resolve(false)
+
     const id = self.crypto.randomUUID()
     const { signal, ttlMs } = options
 
@@ -190,24 +194,29 @@ export class StationClient<T extends Record<string, unknown>> {
 
   close(): void {
     const wasLeader = this.isLeader
+    const broadcastChannel = this.broadcastChannel
     this.isClosed = true
     self.removeEventListener('online', this.onlineHandler)
 
+    if (!wasLeader) {
+      for (const id of this.pendingTransacts.keys()) {
+        try {
+          broadcastChannel?.postMessage({ kind: 'transact-abort', id })
+        } catch {}
+      }
+    }
+
     try {
-      this.broadcastChannel?.close()
+      broadcastChannel?.close()
     } catch {}
     try {
       this.webSocket?.close(1000, 'closed')
     } catch {}
 
+    this.broadcastChannel = null
     this.webSocket = null
     this.isLeader = false
     this.outboundQueue.length = 0
-    if (!wasLeader) {
-      for (const id of this.pendingTransacts.keys()) {
-        this.broadcastChannel?.postMessage({ kind: 'transact-abort', id })
-      }
-    }
     for (const pending of this.pendingTransacts.values()) {
       pending.cleanup()
       pending.reject(new Error('Station client closed'))
