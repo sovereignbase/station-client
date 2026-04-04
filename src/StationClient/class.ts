@@ -3,11 +3,8 @@ import type {
   StationClientEventMap,
   StationClientEventListenerFor,
   StationClientLocalMessageShape,
+  StationClientRemoteMessageShape,
 } from '../.types/index.js'
-
-type StationClientStationMessage<T extends Record<string, unknown>> =
-  | T
-  | readonly ['station-client-transact', string, T]
 
 export class StationClient<T extends Record<string, unknown>> {
   private readonly eventTarget = new EventTarget()
@@ -23,7 +20,7 @@ export class StationClient<T extends Record<string, unknown>> {
   private isLeader: boolean = false
   private isClosed: boolean = false
   private isConnecting: boolean = false
-  private readonly outboundQueue: StationClientStationMessage<T>[] = []
+  private readonly outboundQueue: StationClientRemoteMessageShape<T>[] = []
   private readonly pendingTransacts = new Map<string, (message: T) => void>()
   private readonly pendingTransactTargets = new Map<string, string>()
 
@@ -64,7 +61,7 @@ export class StationClient<T extends Record<string, unknown>> {
 
       this.pendingTransactTargets.set(envelope.id, envelope.source)
       this.sendToStation([
-        'station-client-transact',
+        'station-client-request',
         envelope.id,
         envelope.message,
       ])
@@ -89,7 +86,7 @@ export class StationClient<T extends Record<string, unknown>> {
 
       if (this.isLeader) {
         this.pendingTransactTargets.set(id, this.instanceId)
-        this.sendToStation(['station-client-transact', id, message])
+        this.sendToStation(['station-client-request', id, message])
         return
       }
 
@@ -148,7 +145,7 @@ export class StationClient<T extends Record<string, unknown>> {
 
   /**helpers*/
 
-  private sendToStation(message: StationClientStationMessage<T>) {
+  private sendToStation(message: StationClientRemoteMessageShape<T>) {
     if (!this.isLeader || !this.webSocketUrl) return
 
     if (!this.webSocket || this.webSocket.readyState !== WebSocket.OPEN) {

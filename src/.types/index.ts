@@ -42,3 +42,7 @@ export type StationClientLocalMessageShape<T extends Record<string, unknown>> =
       target: string
       message: T
     }
+
+export type StationClientRemoteMessageShape<T extends Record<string, unknown>> =
+  | T
+  | readonly ['station-client-request', string, T]
