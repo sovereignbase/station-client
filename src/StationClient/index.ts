@@ -136,10 +136,12 @@ export class StationClient<T extends Record<string, unknown>> {
       await new Promise<void>((resolve) => setTimeout(resolve, 500))
     }
   }
+  /**peer to peer*/
   relay(message: T) {
     this.broadcastChannel?.postMessage(message)
   }
-  backup(snapshot: T) {
-    this.webSocket?.send(encode(snapshot))
+  /**client to server*/
+  transact(message: T) {
+    this.webSocket?.send(encode(message))
   }
 }
