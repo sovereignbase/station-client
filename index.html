@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>station-client entropy for browser crypto</title>
+    <title>station-client browser demo</title>
     <link
       rel="shortcut icon"
       href="https://sovereignbase.dev/sovereignbase_logo.png"
@@ -13,8 +13,17 @@
       :root {
         color-scheme: dark;
         font-family: 'IBM Plex Sans', 'Segoe UI', sans-serif;
-        background: #000;
-        color: #fff;
+        --bg: #060606;
+        --panel: rgba(255, 255, 255, 0.05);
+        --panel-strong: rgba(255, 255, 255, 0.08);
+        --stroke: rgba(255, 255, 255, 0.14);
+        --stroke-strong: rgba(255, 255, 255, 0.22);
+        --text: #fff;
+        --text-soft: rgba(255, 255, 255, 0.72);
+        --accent: #97f0ff;
+        --accent-soft: rgba(151, 240, 255, 0.16);
+        background: var(--bg);
+        color: var(--text);
       }
 
       * {
@@ -26,39 +35,66 @@
         min-height: 100vh;
         background:
           radial-gradient(
+            circle at 15% 20%,
+            rgba(151, 240, 255, 0.16),
+            transparent 28%
+          ),
+          radial-gradient(
+            circle at 85% 0%,
+            rgba(255, 214, 153, 0.12),
+            transparent 24%
+          ),
+          radial-gradient(
             circle at top,
             rgba(255, 255, 255, 0.1),
             transparent 36%
           ),
-          #000;
-        color: #fff;
+          var(--bg);
+        color: var(--text);
       }
 
       main {
-        width: min(100%, 42rem);
+        width: min(100%, 46rem);
         margin: 0 auto;
         padding: 1.25rem;
       }
 
       .shell {
         display: grid;
-        gap: 1.25rem;
-        padding: 1.25rem;
-        border: 1px solid rgba(255, 255, 255, 0.14);
-        border-radius: 1.25rem;
-        background: rgba(255, 255, 255, 0.04);
-        box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.45);
+        gap: 1.5rem;
+        padding: 1.4rem;
+        border: 1px solid var(--stroke);
+        border-radius: 1.5rem;
+        background:
+          linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.06),
+            rgba(255, 255, 255, 0.03)
+          ),
+          rgba(255, 255, 255, 0.02);
+        box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.42);
+        backdrop-filter: blur(16px);
+      }
+
+      .eyebrow {
+        margin: 0;
+        font-size: 0.78rem;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--accent);
       }
 
       h1 {
         margin: 0;
         font-size: clamp(2rem, 8vw, 3.4rem);
-        line-height: 0.95;
+        line-height: 0.92;
+        max-width: 12ch;
       }
 
       .lede {
         margin: 0;
-        color: rgba(255, 255, 255, 0.76);
+        max-width: 34rem;
+        color: var(--text-soft);
         line-height: 1.6;
       }
 
@@ -69,83 +105,65 @@
 
       label {
         display: grid;
-        gap: 0.55rem;
-        font-size: 0.95rem;
-      }
-
-      input,
-      button,
-      a {
-        border-radius: 999px;
+        gap: 0.65rem;
+        padding: 0.95rem 1rem;
+        border: 1px solid var(--stroke);
+        border-radius: 1rem;
+        background: var(--panel);
+        font-size: 0.78rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--text-soft);
       }
 
       input {
         width: 100%;
         padding: 0.9rem 1rem;
-        border: 1px solid rgba(255, 255, 255, 0.16);
-        background: #050505;
-        color: #fff;
+        border: 1px solid var(--stroke);
+        border-radius: 0.9rem;
+        background: rgba(0, 0, 0, 0.35);
+        color: var(--text);
         font: inherit;
+        font-size: 1rem;
+        letter-spacing: 0;
+        text-transform: none;
+        transition:
+          border-color 160ms ease,
+          background-color 160ms ease,
+          box-shadow 160ms ease,
+          transform 160ms ease;
       }
 
       input::placeholder {
         color: rgba(255, 255, 255, 0.38);
       }
 
-      .actions {
-        display: grid;
-        gap: 0.75rem;
+      input:hover {
+        border-color: var(--stroke-strong);
+        background: rgba(255, 255, 255, 0.06);
       }
 
-      button {
-        width: 100%;
-        padding: 0.95rem 1rem;
-        border: 1px solid rgba(255, 255, 255, 0.16);
-        background: #fff;
-        color: #000;
-        font: inherit;
-        font-weight: 700;
-        cursor: pointer;
+      input:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 0.28rem var(--accent-soft);
       }
 
-      button.secondary {
-        background: transparent;
-        color: #fff;
+      .toggle {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
       }
 
-      button:disabled {
-        opacity: 0.55;
-        cursor: progress;
-      }
-
-      .status {
+      .toggle input {
+        width: 1.35rem;
+        height: 1.35rem;
         margin: 0;
-        min-height: 1.5rem;
-        color: rgba(255, 255, 255, 0.7);
-      }
-
-      .result {
-        display: grid;
-        gap: 0.5rem;
-        padding: 1rem;
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        border-radius: 1rem;
-        background: rgba(255, 255, 255, 0.03);
-      }
-
-      .result-label {
-        font-size: 0.78rem;
-        letter-spacing: 0.14em;
-        text-transform: uppercase;
-        color: rgba(255, 255, 255, 0.6);
-      }
-
-      output {
-        display: block;
-        overflow-wrap: anywhere;
-        font-family: 'IBM Plex Mono', 'Cascadia Code', monospace;
-        font-size: 0.95rem;
-        line-height: 1.5;
+        padding: 0;
+        border-radius: 0.35rem;
+        accent-color: var(--accent);
+        box-shadow: none;
       }
 
       .links {
@@ -154,16 +172,38 @@
         gap: 0.75rem;
       }
 
-      .links a {
+      .links a,
+      .spec-link {
         display: inline-flex;
         align-items: center;
         justify-content: center;
         gap: 0.6rem;
-        min-height: 2.5rem;
-        padding: 0.75rem 1rem;
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        color: #fff;
+        min-height: 2.75rem;
+        padding: 0.8rem 1rem;
+        border: 1px solid var(--stroke);
+        border-radius: 1rem;
+        background: var(--panel);
+        color: var(--text);
         text-decoration: none;
+        transition:
+          transform 160ms ease,
+          border-color 160ms ease,
+          background-color 160ms ease;
+      }
+
+      .links a:hover,
+      .spec-link:hover {
+        transform: translateY(-1px);
+        border-color: var(--stroke-strong);
+        background: var(--panel-strong);
+      }
+
+      .spec-link {
+        width: fit-content;
+      }
+
+      .links a {
+        font-weight: 600;
       }
 
       .links img {
@@ -178,11 +218,15 @@
         }
 
         .shell {
-          padding: 1.75rem;
+          padding: 1.9rem;
         }
 
-        .actions {
+        .controls {
           grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .toggle {
+          grid-column: 1 / -1;
         }
       }
     </style>
@@ -190,9 +234,11 @@
   <body>
     <main>
       <section class="shell">
+        <p class="eyebrow">Browser Demo</p>
         <h1>A realtime client for sovereignbase</h1>
         <p class="lede">
-          Open a another browser tab and make changes and see they get synced no
+          Open this page in another tab and edit either view. The form state
+          stays in sync between tabs in real time.
         </p>
 
         <div class="controls">
@@ -206,8 +252,8 @@
             <input id="amount" type="number" placeholder="0" />
           </label>
 
-          <label for="flag">
-            flag
+          <label class="toggle" for="flag">
+            <span>flag</span>
             <input id="flag" type="checkbox" />
           </label>
         </div>
@@ -227,7 +273,7 @@
           </a>
         </nav>
 
-        <a href="/spec">read specification</a>
+        <a class="spec-link" href="/spec">read specification</a>
       </section>
     </main>
     <script type="module" src="./index.js"></script>
