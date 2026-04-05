@@ -47,19 +47,39 @@
     </section>
     <section id="sotd">
       <p>
-        This document is an unofficial editor's draft. It describes the current
-        behavior of the reference implementation in <code>src/</code> and may
-        change without notice.
-      </p>
-    </section>
-    <section class="informative">
-      <h2>Introduction</h2>
-      <p>
         A <a>station client</a> provides a local-first coordination layer for
         applications that run in multiple
         <a data-lt="same-origin context">same-origin contexts</a> while sharing
         one opportunistic connection to a Sovereignbase <a>base station</a>.
       </p>
+      <p>
+        This specification is maintained alongside a reference implementation.
+      </p>
+
+      <p>To use the reference implementation see:</p>
+      <ul>
+        <li>
+          <a href="https://www.npmjs.com/package/@sovereignbase/station-client"
+            >NPM Registry
+          </a>
+        </li>
+        <li>
+          <a href="https://jsr.io/@sovereignbase/station-client"
+            >JSR Registry
+          </a>
+        </li>
+      </ul>
+
+      <p>To test how the tabs sync locally see:</p>
+      <ul>
+        <li>
+          <a href="https://sovereignbase.dev/station-client">Local demo </a>
+        </li>
+      </ul>
+    </section>
+    <section class="informative">
+      <h2>Introduction</h2>
+
       <p>
         The abstract model in this specification is intentionally
         language-agnostic. It defines relaying, request-response transactions,
