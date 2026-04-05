@@ -29,6 +29,10 @@
           'no-unused-dfns': true,
         },
         localBiblio: {
+          INFRA: {
+            title: 'Infra Standard',
+            href: 'https://infra.spec.whatwg.org/',
+          },
           MSGPACK: {
             href: 'https://msgpack.org/',
           },
@@ -41,8 +45,7 @@
       <p>
         This specification defines a station client for coordinating same-origin
         execution contexts around a single logical connection to a Sovereignbase
-        base station. It defines an abstract processing model and a JavaScript
-        reference binding for the current package.
+        base station.
       </p>
     </section>
     <section id="sotd">
@@ -109,6 +112,11 @@
         Conformance requirements phrased as algorithms or assertions apply to
         implementations of the station client model and to the JavaScript
         reference binding defined in this specification.
+      </p>
+      <p>
+        This document depends on Infra [[INFRA]]. Infra-defined terminology,
+        including <a data-cite="INFRA#tuple">tuple</a>, is to be interpreted as
+        defined there.
       </p>
     </section>
     <section>
@@ -349,12 +357,14 @@
           application message value itself.
         </p>
         <p>
-          A transact request is transported as the tuple
+          A transact request is transported as the
+          <a data-cite="INFRA#tuple">tuple</a>
           <code>["station-client-request", id, message]</code>, where
           <code>id</code> is a binding-generated request identifier.
         </p>
         <p>
-          A transact response is transported as the tuple
+          A transact response is transported as the
+          <a data-cite="INFRA#tuple">tuple</a>
           <code>["station-client-response", id, message]</code>, where
           <code>id</code> identifies the pending transact operation being
           fulfilled.
