@@ -1,3 +1,8 @@
+[![npm version](https://img.shields.io/npm/v/@sovereignbase/station-client)](https://www.npmjs.com/package/@sovereignbase/station-client)
+[![CI](https://github.com/sovereignbase/station-client/actions/workflows/ci.yaml/badge.svg?branch=master)](https://github.com/sovereignbase/station-client/actions/workflows/ci.yaml)
+[![codecov](https://codecov.io/gh/sovereignbase/station-client/branch/master/graph/badge.svg)](https://codecov.io/gh/sovereignbase/station-client)
+[![license](https://img.shields.io/npm/l/@sovereignbase/station-client)](LICENSE)
+
 # station-client
 
 Local-first station client for same-origin tabs and workers that share an

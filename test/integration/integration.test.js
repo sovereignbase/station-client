@@ -2,18 +2,16 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { createServer } from 'node:http'
 import { decode, encode } from '@msgpack/msgpack'
-import { WebSocketServer } from 'ws'
+import { WebSocket, WebSocketServer } from 'ws'
 import { StationClient } from '../../dist/index.js'
 import {
   installBrowserLikeRuntime,
   waitFor,
 } from '../shared/station-client-fixtures.mjs'
 
-const NativeWebSocket = globalThis.WebSocket
-
 test('integration: two clients share one base station connection and transact through the leader', async () => {
   const readyTimeoutMs = 15_000
-  const runtime = installBrowserLikeRuntime({ WebSocketImpl: NativeWebSocket })
+  const runtime = installBrowserLikeRuntime({ WebSocketImpl: WebSocket })
   const server = createServer()
   const wss = new WebSocketServer({ server })
   const state = {
@@ -78,7 +76,7 @@ test('integration: two clients share one base station connection and transact th
     await waitFor(() => state.currentConnections === 1, {
       timeoutMs: readyTimeoutMs,
     })
-    await waitFor(() => leader.webSocket?.readyState === NativeWebSocket.OPEN, {
+    await waitFor(() => leader.webSocket?.readyState === WebSocket.OPEN, {
       timeoutMs: readyTimeoutMs,
     })
 
