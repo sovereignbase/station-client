@@ -43,39 +43,67 @@ vlt install jsr:@sovereignbase/station-client
 
 ```ts
 import { StationClient } from '@sovereignbase/station-client'
+import { OOStruct } from '@sovereignbase/convergent-replicated-struct'
 
-type Message =
-  | { kind: 'presence'; online: boolean }
-  | { kind: 'echo'; text: string }
-
-const client = new StationClient<Message>('wss://example.com/base-station')
-
-client.addEventListener('message', (event) => {
-  console.log('received', event.detail)
-})
-
-client.relay({ kind: 'presence', online: true })
-
-const controller = new AbortController()
-const response = await client.transact(
-  { kind: 'echo', text: 'hello' },
-  { signal: controller.signal }
-)
-
-if (response !== false) {
-  console.log('response', response)
+type State = {
+  name: string
+  amount: number
+  flag: boolean
 }
 
-client.close()
-```
+const station = new StationClient<Partial<State>>()
+const snapshot =
+  JSON.parse(localStorage.getItem('state') ?? 'null') ?? undefined
+const state = new OOStruct<State>(
+  {
+    name: '',
+    amount: 0,
+    flag: false,
+  },
+  snapshot
+)
 
-### Local-only mode
+const nameInput = document.getElementById('name') as HTMLInputElement
+const amountInput = document.getElementById('amount') as HTMLInputElement
+const flagInput = document.getElementById('flag') as HTMLInputElement
 
-Construct with an empty string to skip upstream connectivity and use only
-same-origin local coordination.
+nameInput.value = state.read('name')
+amountInput.value = state.read('amount')
+flagInput.checked = state.read('flag')
 
-```ts
-const client = new StationClient<{ kind: 'ping' }>()
+nameInput.addEventListener('change', (event) => {
+  state.update('name', (event.target as HTMLInputElement).value)
+  state.snapshot()
+})
+
+amountInput.addEventListener('change', (event) => {
+  state.update('amount', (event.target as HTMLInputElement).valueAsNumber)
+  state.snapshot()
+})
+
+flagInput.addEventListener('change', (event) => {
+  state.update('flag', (event.target as HTMLInputElement).checked)
+  state.snapshot()
+})
+
+state.addEventListener('snapshot', (event) => {
+  localStorage.setItem('state', JSON.stringify(event.detail))
+})
+
+state.addEventListener('delta', (event) => {
+  station.relay(event.detail)
+})
+
+station.addEventListener('message', (event) => {
+  state.merge(event.detail)
+})
+
+state.addEventListener('change', (event) => {
+  const { name, amount, flag } = event.detail
+  if (name !== undefined) nameInput.value = name
+  if (amount !== undefined) amountInput.value = String(amount)
+  if (flag !== undefined) flagInput.checked = flag
+})
 ```
 
 ### Events
