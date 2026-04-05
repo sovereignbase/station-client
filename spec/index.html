@@ -108,7 +108,7 @@
     </section>
     <section id="conformance">
       <p>
-        This document depends on Infra [[INFRA]]. Infra-defined terminology,
+        This document references Infra [[INFRA]]. Infra-defined terminology,
         including <a data-cite="INFRA#tuple">tuple</a>, is to be interpreted as
         defined there.
       </p>
@@ -181,10 +181,10 @@
           to complete locally.
         </p>
         <p>
-          A leader context MUST opportunistically forward a relayed application
-          message to the base station transport, where it gets relayed to peers
-          on a given topic according to logic outside the scope of this
-          specification.
+          A leader context SHOULD opportunistically forward a relayed
+          application message to the base station transport, where it gets
+          relayed to peers on a given topic according to logic outside the scope
+          of this specification.
         </p>
         <p>
           A relay operation MUST NOT synthesize a loopback local delivery back
@@ -250,7 +250,7 @@
         };
 
         [Exposed=(Window,Worker)]
-        interface StationClient : EventTarget {
+        interface StationClient {
           constructor(optional USVString webSocketUrl = "");
           undefined relay(StationClientMessage message);
           Promise&lt;StationClientTransactResult&gt; transact(
@@ -258,6 +258,16 @@
             optional StationClientTransactOptions options = {}
           );
           undefined close();
+          undefined addEventListener(
+            DOMString type,
+            EventListener? callback,
+            optional (AddEventListenerOptions or boolean) options = {}
+          );
+          undefined removeEventListener(
+            DOMString type,
+            EventListener? callback,
+            optional (EventListenerOptions or boolean) options = {}
+          );
         };
         </pre>
       </section>
@@ -328,6 +338,11 @@
           A {{StationClient}} dispatches a <code>message</code> event when it
           receives an application message from another same-origin context or
           from the base station.
+        </p>
+        <p>
+          The JavaScript reference binding exposes
+          {{StationClient/addEventListener()}} and
+          {{StationClient/removeEventListener()}} for observing those events.
         </p>
         <p>
           The event object MUST be a {{CustomEvent}}, and its
