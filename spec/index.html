@@ -519,8 +519,13 @@
           coordination group.
         </p>
         <p>
-          If the receiving instance currently owns the active base station
-          transport, it MAY also forward |message| to the base station.
+          If the calling instance currently owns the active base station
+          transport, it attempts to forward |message| to the base station.
+        </p>
+        <p>
+          In the current binding, ordinary relayed upstream messages MAY be
+          buffered while the host reports online status but no open upstream
+          WebSocket is yet available.
         </p>
         <p>
           Calling {{StationClient/relay(message)}} does not by itself dispatch a
@@ -543,12 +548,25 @@
           determine that the request cannot presently be issued.
         </p>
         <p>
+          In the current binding, {{StationClient/transact(message, options)}}
+          resolves with <code>false</code> without issuing an upstream request
+          when the instance is closed, when no <code>webSocketUrl</code> is
+          configured, when the host reports offline status, or when the calling
+          instance is the leader but no open upstream WebSocket is available.
+        </p>
+        <p>
           If <code>options.signal</code> is aborted, the promise rejects with an
           abort error.
         </p>
         <p>
           <code>options.ttlMs</code> sets the leader-side stale-routing lifetime
           for a pending follower request. It is not a general request timeout.
+        </p>
+        <p>
+          This binding does not guarantee bounded completion time for follower
+          requests that are waiting for leader-side handling. Without a
+          correlated response or caller-supplied abort, such a promise MAY
+          remain pending.
         </p>
       </section>
       <section>
@@ -558,6 +576,12 @@
           local coordination resources, closes the active base station transport
           if owned by the instance, and rejects any still-pending transact
           operations owned by the instance.
+        </p>
+        <p>
+          After {{StationClient/close()}}, later
+          {{StationClient/relay(message)}} calls have no effect and later
+          {{StationClient/transact(message, options)}} calls resolve with
+          <code>false</code>.
         </p>
       </section>
       <section>
@@ -580,6 +604,26 @@
           Transact responses are delivered through the promise returned by
           {{StationClient/transact(message, options)}} rather than through the
           <code>message</code> event.
+        </p>
+      </section>
+      <section>
+        <h3>Host Environment Requirements</h3>
+        <p>
+          The JavaScript reference binding requires host support for
+          <code>BroadcastChannel</code>, <code>EventTarget</code>,
+          <code>CustomEvent</code>, <code>MessageEvent</code>,
+          <code>AbortSignal</code>, and <code>crypto.randomUUID()</code>.
+        </p>
+        <p>
+          Upstream transport additionally depends on <code>WebSocket</code>.
+          Leadership and reconnection behavior additionally depend on
+          <code>navigator.locks</code> and <code>navigator.onLine</code>.
+        </p>
+        <p>
+          In the current binding, upstream connection attempts are only started
+          when a <code>webSocketUrl</code> is configured and the host reports
+          online status. Reconnection attempts cease while the host reports
+          offline status and resume only after online status returns.
         </p>
       </section>
       <section>
