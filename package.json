@@ -3,10 +3,17 @@
   "license": "Apache-2.0",
   "name": "@sovereignbase/station-client",
   "version": "0.0.0",
-  "description": "",
+  "description": "Local-first station client for tabs and workers sharing an opportunistic Sovereignbase base station transport.",
   "keywords": [
     "typescript",
-    "sovereignbase"
+    "sovereignbase",
+    "station-client",
+    "base-station",
+    "local-first",
+    "broadcastchannel",
+    "websocket",
+    "tab-sync",
+    "worker"
   ],
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
