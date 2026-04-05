@@ -6,34 +6,231 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="Specification for the Sovereignbase station client: local-first coordination for tabs and workers with relay, transact, and an opportunistic base station transport."
+      content="Unofficial ReSpec specification for @sovereignbase/station-client, defining local-first coordination for same-origin tabs and workers with relay, transact, and an opportunistic base station transport."
     />
     <meta
       name="keywords"
-      content="Sovereignbase, station client, base station, specification, local-first, BroadcastChannel, WebSocket, ReSpec"
+      content="Sovereignbase, station-client, station client, base station, specification, ReSpec, local-first, BroadcastChannel, WebSocket, same-origin, tabs, workers"
     />
+    <meta name="author" content="Jori Lehtinen" />
+    <meta name="application-name" content="station-client" />
     <meta
       name="robots"
-      content="index,follow,max-snippet:-1,max-image-preview:large,max-video-preview:-1"
+      content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
     />
+    <link
+      rel="canonical"
+      href="https://sovereignbase.dev/station-client/spec"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      href="https://sovereignbase.dev/sovereignbase_logo.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      href="https://sovereignbase.dev/sovereignbase_logo.png"
+    />
+    <meta property="og:type" content="article" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:site_name" content="Sovereignbase" />
     <meta
       property="og:title"
       content="Station client for a Sovereignbase base station"
     />
     <meta
       property="og:description"
-      content="Specification for the Sovereignbase station client: local-first coordination for tabs and workers with relay, transact, and an opportunistic base station transport."
+      content="Unofficial ReSpec specification for @sovereignbase/station-client, defining local-first coordination for same-origin tabs and workers with relay, transact, and an opportunistic base station transport."
     />
-    <meta property="og:type" content="article" />
-    <meta name="twitter:card" content="summary" />
+    <meta
+      property="og:url"
+      content="https://sovereignbase.dev/station-client/spec"
+    />
+    <meta
+      property="og:image"
+      content="https://sovereignbase.dev/sovereignbase_social_sharing_image.png"
+    />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="Station client for a Sovereignbase base station specification"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
     <meta
       name="twitter:title"
       content="Station client for a Sovereignbase base station"
     />
     <meta
       name="twitter:description"
-      content="Specification for the Sovereignbase station client: local-first coordination for tabs and workers with relay, transact, and an opportunistic base station transport."
+      content="Unofficial ReSpec specification for @sovereignbase/station-client, defining local-first coordination for same-origin tabs and workers with relay, transact, and an opportunistic base station transport."
     />
+    <meta
+      name="twitter:image"
+      content="https://sovereignbase.dev/sovereignbase_social_sharing_image.png"
+    />
+    <meta
+      name="twitter:image:alt"
+      content="Station client for a Sovereignbase base station specification"
+    />
+    <meta name="twitter:creator" content="@jortsupetterson" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://sovereignbase.dev/station-client/#organization",
+            "name": "Sovereignbase",
+            "url": "https://github.com/sovereignbase",
+            "alternateName": ["@sovereignbase"],
+            "logo": {
+              "@type": "ImageObject",
+              "url": "https://sovereignbase.dev/sovereignbase_logo.png",
+              "width": 320,
+              "height": 320
+            },
+            "sameAs": [
+              "https://github.com/sovereignbase",
+              "https://jsr.io/@sovereignbase",
+              "https://www.npmjs.com/org/sovereignbase"
+            ]
+          },
+          {
+            "@type": "Person",
+            "@id": "https://sovereignbase.dev/station-client/#author",
+            "name": "Jori Lehtinen",
+            "url": "https://github.com/jortsupetterson",
+            "alternateName": ["jortsupetterson", "@jortsupetterson"],
+            "sameAs": [
+              "https://github.com/jortsupetterson",
+              "https://www.npmjs.com/~jortsupetterson",
+              "https://jsr.io/user/ab186a13-a64f-429e-a757-927aa4fa6e6c",
+              "https://linkedin.com/in/jortsupetterson",
+              "https://x.com/jortsupetterson",
+              "https://www.youtube.com/@jortsupetterson"
+            ]
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://sovereignbase.dev/station-client/#website",
+            "url": "https://sovereignbase.dev/station-client/",
+            "name": "station-client",
+            "inLanguage": "en",
+            "publisher": {
+              "@id": "https://sovereignbase.dev/station-client/#organization"
+            }
+          },
+          {
+            "@type": "SoftwareSourceCode",
+            "@id": "https://sovereignbase.dev/station-client/#software",
+            "name": "@sovereignbase/station-client",
+            "alternateName": ["station-client"],
+            "url": "https://sovereignbase.dev/station-client/",
+            "description": "Local-first station client for same-origin tabs and workers that share an opportunistic Sovereignbase base station transport.",
+            "codeRepository": "https://github.com/sovereignbase/station-client",
+            "license": "https://www.apache.org/licenses/LICENSE-2.0",
+            "programmingLanguage": ["TypeScript", "JavaScript"],
+            "runtimePlatform": ["Web Browser", "Web Worker"],
+            "keywords": [
+              "Sovereignbase",
+              "station-client",
+              "base station",
+              "ReSpec",
+              "BroadcastChannel",
+              "WebSocket",
+              "local-first"
+            ],
+            "image": "https://sovereignbase.dev/sovereignbase_social_sharing_image.png",
+            "isAccessibleForFree": true,
+            "author": {
+              "@id": "https://sovereignbase.dev/station-client/#author"
+            },
+            "maintainer": {
+              "@id": "https://sovereignbase.dev/station-client/#organization"
+            },
+            "publisher": {
+              "@id": "https://sovereignbase.dev/station-client/#organization"
+            },
+            "sameAs": [
+              "https://jsr.io/@sovereignbase/station-client",
+              "https://www.npmjs.com/package/@sovereignbase/station-client"
+            ]
+          },
+          {
+            "@type": "TechArticle",
+            "@id": "https://sovereignbase.dev/station-client/spec#specification",
+            "headline": "Station client for a Sovereignbase base station",
+            "name": "Station client for a Sovereignbase base station",
+            "url": "https://sovereignbase.dev/station-client/spec",
+            "description": "Unofficial ReSpec specification for @sovereignbase/station-client, defining local-first coordination for same-origin tabs and workers with relay, transact, and an opportunistic base station transport.",
+            "inLanguage": "en",
+            "isPartOf": {
+              "@id": "https://sovereignbase.dev/station-client/#website"
+            },
+            "mainEntityOfPage": {
+              "@id": "https://sovereignbase.dev/station-client/spec#webpage"
+            },
+            "about": {
+              "@id": "https://sovereignbase.dev/station-client/#software"
+            },
+            "author": {
+              "@id": "https://sovereignbase.dev/station-client/#author"
+            },
+            "publisher": {
+              "@id": "https://sovereignbase.dev/station-client/#organization"
+            },
+            "image": {
+              "@type": "ImageObject",
+              "url": "https://sovereignbase.dev/sovereignbase_social_sharing_image.png",
+              "width": 1200,
+              "height": 630
+            }
+          },
+          {
+            "@type": "WebPage",
+            "@id": "https://sovereignbase.dev/station-client/spec#webpage",
+            "url": "https://sovereignbase.dev/station-client/spec",
+            "name": "Station client for a Sovereignbase base station",
+            "description": "Unofficial ReSpec specification for @sovereignbase/station-client, defining local-first coordination for same-origin tabs and workers with relay, transact, and an opportunistic base station transport.",
+            "inLanguage": "en",
+            "isPartOf": {
+              "@id": "https://sovereignbase.dev/station-client/#website"
+            },
+            "about": {
+              "@id": "https://sovereignbase.dev/station-client/#software"
+            },
+            "author": {
+              "@id": "https://sovereignbase.dev/station-client/#author"
+            },
+            "publisher": {
+              "@id": "https://sovereignbase.dev/station-client/#organization"
+            },
+            "primaryImageOfPage": {
+              "@type": "ImageObject",
+              "url": "https://sovereignbase.dev/sovereignbase_social_sharing_image.png",
+              "width": 1200,
+              "height": 630
+            },
+            "relatedLink": [
+              "https://github.com/sovereignbase",
+              "https://jsr.io/@sovereignbase",
+              "https://www.npmjs.com/org/sovereignbase",
+              "https://github.com/sovereignbase/station-client",
+              "https://jsr.io/@sovereignbase/station-client",
+              "https://www.npmjs.com/package/@sovereignbase/station-client",
+              "https://github.com/jortsupetterson",
+              "https://www.npmjs.com/~jortsupetterson",
+              "https://jsr.io/user/ab186a13-a64f-429e-a757-927aa4fa6e6c",
+              "https://linkedin.com/in/jortsupetterson",
+              "https://x.com/jortsupetterson",
+              "https://www.youtube.com/@jortsupetterson"
+            ]
+          }
+        ]
+      }
+    </script>
     <script
       src="https://www.w3.org/Tools/respec/respec-w3c"
       class="remove"
