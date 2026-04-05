@@ -3,11 +3,11 @@
 Local-first station client for same-origin tabs and workers that share an
 opportunistic Sovereignbase base station transport. It uses
 `BroadcastChannel` for immediate local delivery and elects a single leader
-context to own the upstream WebSocket connection.
+context to own the upstream `WebSocket` connection.
 
 ## Compatibility
 
-- Runtimes: modern browsers and worker-like hosts with the APIs below;
+- Runtimes: web browsers and web workers with the APIs below.
 - Module format: ESM and CJS builds.
 - Required globals / APIs: `BroadcastChannel`, `WebSocket`, `AbortSignal`,
   `EventTarget`, `CustomEvent`, `MessageEvent`, `DOMException`,
@@ -101,7 +101,7 @@ station.addEventListener('message', (event) => {
 state.addEventListener('change', (event) => {
   const { name, amount, flag } = event.detail
   if (name !== undefined) nameInput.value = name
-  if (amount !== undefined) amountInput.value = String(amount)
+  if (amount !== undefined) amountInput.value = amount
   if (flag !== undefined) flagInput.checked = flag
 })
 ```
@@ -151,13 +151,13 @@ The current JavaScript binding uses these MessagePack payload shapes:
 
 Command: `npm run test`
 
-- Build: `npm run build`
-- Coverage: `node test/run-coverage.mjs`
-- Browser E2E: `node test/e2e/run.mjs`
+- Build tooling: `npm run build`
+- Coverage tooling: `node test/run-coverage.mjs`
+- Browser E2E tooling: `node test/e2e/run.mjs`
 - Playwright matrix: Chromium, Firefox, WebKit, Pixel 5, iPhone 12
 
-The repository currently includes unit and integration coverage in Node plus
-browser E2E coverage for the reference binding.
+The package runtime target is web browsers and web workers. The repository
+uses Node-based tooling to build and run automated tests for that binding.
 
 ## License
 
