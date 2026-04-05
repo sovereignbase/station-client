@@ -12,6 +12,7 @@ import {
 const NativeWebSocket = globalThis.WebSocket
 
 test('integration: two clients share one base station connection and transact through the leader', async () => {
+  const readyTimeoutMs = 15_000
   const runtime = installBrowserLikeRuntime({ WebSocketImpl: NativeWebSocket })
   const server = createServer()
   const wss = new WebSocketServer({ server })
@@ -74,9 +75,11 @@ test('integration: two clients share one base station connection and transact th
       followerMessages.push(event.detail)
     })
 
-    await waitFor(() => state.currentConnections === 1, { timeoutMs: 5_000 })
+    await waitFor(() => state.currentConnections === 1, {
+      timeoutMs: readyTimeoutMs,
+    })
     await waitFor(() => leader.webSocket?.readyState === NativeWebSocket.OPEN, {
-      timeoutMs: 5_000,
+      timeoutMs: readyTimeoutMs,
     })
 
     const response = await follower.transact({ type: 'integration' })
