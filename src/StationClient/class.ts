@@ -3,10 +3,10 @@ import type {
   StationClientEventMap,
   StationClientEventListenerFor,
   StationClientLocalMessageShape,
-  StationClientPendingTransact,
-  StationClientPendingTransactTarget,
+  StationClientPendingFetch,
+  StationClientPendingFetchTarget,
   StationClientRemoteMessageShape,
-  StationClientTransactOptions,
+  StationClientFetchOptions,
 } from '../.types/index.js'
 
 /**
@@ -29,13 +29,13 @@ export class StationClient<T extends Record<string, unknown>> {
   private isClosed: boolean = false
   private isConnecting: boolean = false
   private readonly outboundQueue: StationClientRemoteMessageShape<T>[] = []
-  private readonly pendingTransacts = new Map<
+  private readonly pendingfetchs = new Map<
     string,
-    StationClientPendingTransact<T>
+    StationClientPendingFetch<T>
   >()
-  private readonly pendingTransactTargets = new Map<
+  private readonly pendingfetchTargets = new Map<
     string,
-    StationClientPendingTransactTarget
+    StationClientPendingFetchTarget
   >()
 
   /**
@@ -55,7 +55,7 @@ export class StationClient<T extends Record<string, unknown>> {
       const envelope = event.data
       if (!envelope) return
 
-      if (envelope.kind === 'relay') {
+      if (envelope.kind === 'post') {
         this.eventTarget.dispatchEvent(
           new CustomEvent('message', { detail: envelope.message })
         )
@@ -65,24 +65,24 @@ export class StationClient<T extends Record<string, unknown>> {
         return
       }
 
-      if (envelope.kind === 'transact-response') {
+      if (envelope.kind === 'fetch-response') {
         if (envelope.target !== this.instanceId) return
 
-        const pending = this.pendingTransacts.get(envelope.id)
+        const pending = this.pendingfetchs.get(envelope.id)
         if (!pending) return
 
-        this.pendingTransacts.delete(envelope.id)
+        this.pendingfetchs.delete(envelope.id)
         pending.cleanup()
         pending.resolve(envelope.message)
         return
       }
 
-      if (envelope.kind === 'transact-abort') {
+      if (envelope.kind === 'fetch-abort') {
         if (!this.isLeader) return
 
-        const pendingTarget = this.pendingTransactTargets.get(envelope.id)
+        const pendingTarget = this.pendingfetchTargets.get(envelope.id)
         if (pendingTarget) clearTimeout(pendingTarget.timeoutId)
-        this.pendingTransactTargets.delete(envelope.id)
+        this.pendingfetchTargets.delete(envelope.id)
         return
       }
 
@@ -95,7 +95,7 @@ export class StationClient<T extends Record<string, unknown>> {
         this.webSocket.readyState !== WebSocket.OPEN
       ) {
         this.broadcastChannel?.postMessage({
-          kind: 'transact-response',
+          kind: 'fetch-response',
           id: envelope.id,
           target: envelope.source,
           message: false,
@@ -103,13 +103,13 @@ export class StationClient<T extends Record<string, unknown>> {
         return
       }
 
-      const pendingTarget = this.pendingTransactTargets.get(envelope.id)
+      const pendingTarget = this.pendingfetchTargets.get(envelope.id)
       if (pendingTarget) clearTimeout(pendingTarget.timeoutId)
 
-      this.pendingTransactTargets.set(envelope.id, {
+      this.pendingfetchTargets.set(envelope.id, {
         target: envelope.source,
         timeoutId: setTimeout(() => {
-          this.pendingTransactTargets.delete(envelope.id)
+          this.pendingfetchTargets.delete(envelope.id)
         }, envelope.ttlMs ?? 30_000),
       })
       this.sendToStation([
@@ -131,10 +131,10 @@ export class StationClient<T extends Record<string, unknown>> {
    *
    * @param message The message to broadcast.
    */
-  relay(message: T) {
+  post(message: T) {
     if (this.isClosed) return
 
-    this.broadcastChannel?.postMessage({ kind: 'relay', message })
+    this.broadcastChannel?.postMessage({ kind: 'post', message })
     this.sendToStation(message)
   }
 
@@ -145,9 +145,9 @@ export class StationClient<T extends Record<string, unknown>> {
    * @param options Options that control cancellation and stale follower cleanup.
    * @returns A promise that resolves with the response message, or `false` when the request cannot be issued.
    */
-  transact(
+  fetch(
     message: T,
-    options: StationClientTransactOptions = {}
+    options: StationClientFetchOptions = {}
   ): Promise<T | false> {
     if (this.isClosed) return Promise.resolve(false)
 
@@ -178,20 +178,20 @@ export class StationClient<T extends Record<string, unknown>> {
       }
 
       const handleAbort = () => {
-        this.pendingTransacts.delete(id)
-        const pendingTarget = this.pendingTransactTargets.get(id)
+        this.pendingfetchs.delete(id)
+        const pendingTarget = this.pendingfetchTargets.get(id)
         if (pendingTarget) clearTimeout(pendingTarget.timeoutId)
-        this.pendingTransactTargets.delete(id)
+        this.pendingfetchTargets.delete(id)
         signal?.removeEventListener('abort', handleAbort)
 
         if (!this.isLeader) {
-          this.broadcastChannel?.postMessage({ kind: 'transact-abort', id })
+          this.broadcastChannel?.postMessage({ kind: 'fetch-abort', id })
         }
 
         reject(abortReason())
       }
 
-      this.pendingTransacts.set(id, {
+      this.pendingfetchs.set(id, {
         resolve,
         reject,
         cleanup: () => {
@@ -206,7 +206,7 @@ export class StationClient<T extends Record<string, unknown>> {
       }
 
       this.broadcastChannel?.postMessage({
-        kind: 'transact',
+        kind: 'fetch',
         id,
         source: this.instanceId,
         ttlMs,
@@ -225,9 +225,9 @@ export class StationClient<T extends Record<string, unknown>> {
     self.removeEventListener('online', this.onlineHandler)
 
     if (!wasLeader) {
-      for (const id of this.pendingTransacts.keys()) {
+      for (const id of this.pendingfetchs.keys()) {
         try {
-          broadcastChannel?.postMessage({ kind: 'transact-abort', id })
+          broadcastChannel?.postMessage({ kind: 'fetch-abort', id })
         } catch {}
       }
     }
@@ -243,15 +243,15 @@ export class StationClient<T extends Record<string, unknown>> {
     this.webSocket = null
     this.isLeader = false
     this.outboundQueue.length = 0
-    for (const pending of this.pendingTransacts.values()) {
+    for (const pending of this.pendingfetchs.values()) {
       pending.cleanup()
       pending.reject(new Error('Station client closed'))
     }
-    this.pendingTransacts.clear()
-    for (const pendingTarget of this.pendingTransactTargets.values()) {
+    this.pendingfetchs.clear()
+    for (const pendingTarget of this.pendingfetchTargets.values()) {
       clearTimeout(pendingTarget.timeoutId)
     }
-    this.pendingTransactTargets.clear()
+    this.pendingfetchTargets.clear()
   }
 
   /**listeners*/
@@ -372,13 +372,13 @@ export class StationClient<T extends Record<string, unknown>> {
                 typeof message[1] === 'string'
               ) {
                 const id = message[1]
-                const pendingTarget = this.pendingTransactTargets.get(id)
+                const pendingTarget = this.pendingfetchTargets.get(id)
                 if (pendingTarget) {
                   clearTimeout(pendingTarget.timeoutId)
-                  this.pendingTransactTargets.delete(id)
+                  this.pendingfetchTargets.delete(id)
 
                   this.broadcastChannel?.postMessage({
-                    kind: 'transact-response',
+                    kind: 'fetch-response',
                     id,
                     target: pendingTarget.target,
                     message: message[2] as T,
@@ -386,10 +386,10 @@ export class StationClient<T extends Record<string, unknown>> {
                   return
                 }
 
-                const pending = this.pendingTransacts.get(id)
+                const pending = this.pendingfetchs.get(id)
                 if (!pending) return
 
-                this.pendingTransacts.delete(id)
+                this.pendingfetchs.delete(id)
                 pending.cleanup()
                 pending.resolve(message[2] as T)
                 return
@@ -400,7 +400,7 @@ export class StationClient<T extends Record<string, unknown>> {
               )
 
               this.broadcastChannel?.postMessage({
-                kind: 'relay',
+                kind: 'post',
                 message: message as T,
               })
             }

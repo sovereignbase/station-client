@@ -40,24 +40,24 @@ export type StationClientEventListenerFor<
  */
 export type StationClientLocalMessageShape<T extends Record<string, unknown>> =
   | {
-      kind: 'relay'
+      kind: 'post'
       message: T
     }
   | {
-      kind: 'transact'
+      kind: 'fetch'
       id: string
       source: string
       ttlMs?: number
       message: T
     }
   | {
-      kind: 'transact-response'
+      kind: 'fetch-response'
       id: string
       target: string
       message: T | false
     }
   | {
-      kind: 'transact-abort'
+      kind: 'fetch-abort'
       id: string
     }
 
@@ -71,28 +71,28 @@ export type StationClientRemoteMessageShape<T extends Record<string, unknown>> =
   | readonly ['station-client-request', string, T]
 
 /**
- * Represents the pending state of an in-flight transact operation.
+ * Represents the pending state of an in-flight fetch operation.
  *
  * @template T The application message shape.
  */
-export type StationClientPendingTransact<T extends Record<string, unknown>> = {
+export type StationClientPendingFetch<T extends Record<string, unknown>> = {
   resolve: (message: T | false) => void
   reject: (reason?: unknown) => void
   cleanup: () => void
 }
 
 /**
- * Represents the leader-side routing state for a pending transact operation.
+ * Represents the leader-side routing state for a pending fetch operation.
  */
-export type StationClientPendingTransactTarget = {
+export type StationClientPendingFetchTarget = {
   target: string
   timeoutId: ReturnType<typeof setTimeout>
 }
 
 /**
- * Provides options for {@link StationClient.transact}.
+ * Provides options for {@link StationClient.fetch}.
  */
-export type StationClientTransactOptions = {
+export type StationClientFetchOptions = {
   /**
    * An {@link AbortSignal} that can be used to cancel the operation.
    */
