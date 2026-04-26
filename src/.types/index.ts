@@ -5,6 +5,7 @@
  */
 export type StationClientEventMap<T extends Record<string, unknown>> = {
   message: T
+  signal: ''
 }
 
 /**
